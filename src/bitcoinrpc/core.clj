@@ -28,7 +28,8 @@
 
 (s/def ::height (s/and integer? #(pos? %)))
 (s/def ::hex-string hex-string?)
-
+(s/def ::address string?)
+(s/def ::signature string?)
 (defn help 
   ([]
     (.split (btc-rpc "help") "\n"))
@@ -44,26 +45,22 @@
 (defmacro def-rpc [name & args]
   `(defn ~name ~(get-description name) [~@args] (btc-rpc ~(str name) ~@args))) 
 
-(defmacro def-rpc-opt [name & args]
+(defmacro def-rpc-opt [name n & args]
   `(defn ~name ~(get-description name) 
      ([~@args] (btc-rpc ~(str name) ~@args))
-     ([~@(butlast args)] (btc-rpc ~(str name) ~@(butlast args)))
+     ([~@(take n args)] (btc-rpc ~(str name) ~@(take n args)))
      ))
-(defmacro def-rpc-all-opt [name & args]
-  `(defn ~name ~(get-description name) 
-     ([~@args] (btc-rpc ~(str name) ~@args))
-     ([] (btc-rpc ~(str name)))
-     ))
+
 
 ;;--------RPC calls-----------
 
-;blockchain
+;== Blockchain ==
 
 (s/fdef getbestblockhash :ret string?)
 (def-rpc getbestblockhash)
 
 (s/fdef getblock :args (s/alt :verbose (s/cat :block-hash string?), :choice (s/cat :block-hash string?, :verbose boolean?)) :ret map?)
-(def-rpc-opt getblock block-hash verbose)
+(def-rpc-opt getblock 1 block-hash verbose)
 
 (s/fdef getblockchaininfo :ret map?)
 (def-rpc getblockchaininfo)
@@ -80,7 +77,7 @@
 (s/fdef getblockheader 
   :args (s/alt :verbose (s/cat :hash string?), :choice (s/cat :hash string?, :verbose boolean?))
   :ret map?)
-(def-rpc-opt getblockheader hash verbose)
+(def-rpc-opt getblockheader 1 hash verbose)
 
 (s/fdef getchaintips :ret vector?) 
 (def-rpc getchaintips)
@@ -88,12 +85,12 @@
 (s/fdef getdifficulty :ret integer?) 
 (def-rpc getdifficulty)
 
-(def-rpc-opt getmempoolancestors txid verbose)
-(def-rpc-opt getmempooldescendants txid verbose)
+(def-rpc-opt getmempoolancestors 1 txid verbose)
+(def-rpc-opt getmempooldescendants 1 txid verbose)
 (def-rpc getmempoolentry txid)
 (def-rpc getmempoolinfo)
-(def-rpc-opt getrawmempool verbose)
-(def-rpc-opt gettxout txid n include_mempool)
+(def-rpc-opt getrawmempool 0 verbose)
+(def-rpc-opt gettxout 2 txid n include_mempool)
 
 (s/fdef gettxoutproof :args (s/alt :verbose (s/cat :txids vector?), :choice (s/cat :txids vector?, :blockhash boolean?)) :ret ::hex-string)
 (def-rpc gettxoutproof txids blockhash)
@@ -101,7 +98,7 @@
 (def-rpc gettxoutsetinfo)
 (def-rpc preciousblock blockhash)
 (def-rpc pruneblockchain)
-;verifychain ( checklevel nblocks )
+(def-rpc-opt verifychain 0 checklevel nblocks)
 (def-rpc verifytxoutproof proof)
 
 
@@ -112,37 +109,40 @@
 (def-rpc stop)
 
 ;== Generating ==
-(def-rpc-opt generate nblocks maxtries)
-(def-rpc-opt generatetoaddress nblocks address maxtries)
+(def-rpc-opt generate 1 nblocks maxtries)
+(def-rpc-opt generatetoaddress 1 nblocks address maxtries)
 
 ;== Mining ==
-(def-rpc-opt getblocktemplate TemplateRequest )
+(def-rpc-opt getblocktemplate 0 TemplateRequest )
 (def-rpc getmininginfo)
-;getnetworkhashps ( nblocks height )
-;prioritisetransaction <txid> <priority delta> <fee delta>
-(def-rpc-opt submitblock hexdata jsonparametersobject)
+(def-rpc-opt getnetworkhashps 0 nblocks height)
+(def-rpc prioritisetransaction txid priority_delta fee_delta)
+(def-rpc-opt submitblock 1 hexdata jsonparametersobject)
 
 ;== Network ==
 (def-rpc addnode node action)
 (def-rpc clearbanned)
 (def-rpc disconnectnode address) 
-(def-rpc-opt getaddednodeinfo node)
+(def-rpc-opt getaddednodeinfo 0 node)
 (def-rpc getconnectioncount)
 (def-rpc getnettotals)
 (def-rpc getnetworkinfo)
 (def-rpc getpeerinfo)
 (def-rpc listbanned)
 (def-rpc ping)
-;setban "subnet" "add|remove" (bantime) (absolute)
+
+(s/def ::ban-action #(or (= % "add") (= % "remove")))
+(s/fdef setban :args (s/alt :default (s/cat :subnet string?, :action ::ban-action) :optional (s/cat :subnet string?, :action ::ban-action, :bantime integer?, :absolute boolean?))) 
+(def-rpc-opt setban 2 subnet ban-action bantime absolute)
 (def-rpc setnetworkactive b)
 
 ;== Rawtransactions ==
 ;createrawtransaction [{"txid":"id","vout":n},...] {"address":amount,"data":"hex",...} ( locktime )
 (def-rpc decoderawtransaction hexstring)
 (def-rpc decodescript hexstring)
-(def-rpc-opt fundrawtransaction hexstring options)
-(def-rpc-opt getrawtransaction txid  verbose)
-(def-rpc-opt sendrawtransaction hexstring allowhighfees)
+(def-rpc-opt fundrawtransaction 1 hexstring options)
+(def-rpc-opt getrawtransaction 1 txid verbose)
+(def-rpc-opt sendrawtransaction 1 hexstring allowhighfees)
 ;signrawtransaction "hexstring" ( [{"txid":"id","vout":n,"scriptPubKey":"hex","redeemScript":"hex"},...] ["privatekey1",...] sighashtype )
 
 ;== Util ==
@@ -151,16 +151,21 @@
 (def-rpc estimatepriority nblocks)
 (def-rpc estimatesmartfee nblocks)
 (def-rpc estimatesmartpriority nblocks)
+
+(s/fdef signmessagewithprivkey :args (s/cat :privkey string?, :message string?) :ret ::signature)
 (def-rpc signmessagewithprivkey privkey message)
+
+(s/fdef validateaddress :args (s/cat :address ::address) :ret map?)
 (def-rpc validateaddress address)
+
 (def-rpc verifymessage address signature message)
 
 ;== Wallet ==
 (def-rpc abandontransaction txid)
-(def-rpc-opt addmultisigaddress nrequired the-keys account)
+(def-rpc-opt addmultisigaddress 2 nrequired the-keys account)
 (def-rpc addwitnessaddress address)
 (def-rpc backupwallet destination)
-(def-rpc-opt bumpfee txid options) 
+(def-rpc-opt bumpfee 1 txid options) 
 (def-rpc dumpprivkey address)
 (def-rpc dumpwallet filename)
 (def-rpc encryptwallet passphrase)
@@ -168,11 +173,11 @@
 (def-rpc getaccountaddress account)
 (def-rpc getaddressesbyaccount account)
 ;getbalance ( "account" minconf include_watchonly )
-(def-rpc-opt getnewaddress account)
+(def-rpc-opt getnewaddress 0 account)
 (def-rpc getrawchangeaddress)
-(def-rpc-opt getreceivedbyaccount account minconf)
-(def-rpc-opt getreceivedbyaddress address minconf)
-(def-rpc-opt gettransaction txid include_watchonly)
+(def-rpc-opt getreceivedbyaccount 1 account minconf)
+(def-rpc-opt getreceivedbyaddress 1 address minconf)
+(def-rpc-opt gettransaction 1 txid include_watchonly)
 (def-rpc getunconfirmedbalance)
 (def-rpc getwalletinfo)
 ;importaddress "address" ( "label" rescan p2sh )
@@ -181,21 +186,24 @@
 (def-rpc importprunedfunds)
 ;importpubkey "pubkey" ( "label" rescan )
 (def-rpc importwallet filename)
-(def-rpc-opt keypoolrefill newsize)
-;listaccounts ( minconf include_watchonly)
+(def-rpc-opt keypoolrefill 0 newsize)
+(def-rpc-opt listaccounts 0 minconf include_watchonly)
 (def-rpc listaddressgroupings)
 (def-rpc listlockunspent)
-;listreceivedbyaccount ( minconf include_empty include_watchonly)
-;listreceivedbyaddress ( minconf include_empty include_watchonly)
-;listsinceblock ( "blockhash" target_confirmations include_watchonly)
-;listtransactions ( "account" count skip include_watchonly)
-(def-rpc-all-opt listunspent minconf maxconf  addresses include_unsafe)
+(def-rpc-opt listreceivedbyaccount 0 minconf include_empty include_watchonly)
+(def-rpc-opt listreceivedbyaddress 0 minconf include_empty include_watchonly)
+(def-rpc-opt listsinceblock 0 blockhash target_confirmations include_watchonly)
+(def-rpc-opt listtransactions 0 account count skip include_watchonly)
+(def-rpc-opt listunspent 0 minconf maxconf  addresses include_unsafe)
 ;lockunspent unlock ([{"txid":"txid","vout":n},...])
-;move "fromaccount" "toaccount" amount ( minconf "comment" )
+(def-rpc-opt move 3 fromaccount toaccount amount minconf comment)
 (def-rpc removeprunedfunds txid)
-;sendfrom "fromaccount" "toaddress" amount ( minconf "comment" "comment_to" )
-;sendmany "fromaccount" {"address":amount,...} ( minconf "comment" ["address",...] )
-;sendtoaddress "address" amount ( "comment" "comment_to" subtractfeefromamount )
+(def-rpc-opt sendfrom 3 fromaccount toaddress amount  minconf comment comment_to)
+(def-rpc-opt sendmany 2 fromaccount addess-map minconf comment addresses)
+
+  
+
+(def-rpc-opt sendtoaddress 2 address amount comment comment_to subtractfeefromamount)
 (def-rpc setaccount address account)
 (def-rpc settxfee amount)
 (def-rpc signmessage address message)
@@ -208,7 +216,8 @@
 
 (defn block-of [block-hash] (getblock block-hash))
 
-
+(defn get-all-tx [])
+  
 
 (defn print-it [a-list]
   (doseq [l a-list] (println l)))
