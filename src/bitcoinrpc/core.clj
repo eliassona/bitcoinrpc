@@ -24,7 +24,10 @@
       (res "result"))))
 
 
-(s/def ::height (s/and integer? #(pos? %) ))
+(def hex-string? (partial re-matches #"[0-9a-fA-F]+"))
+
+(s/def ::height (s/and integer? #(pos? %)))
+(s/def ::hex-string hex-string?)
 
 (defn help 
   ([]
@@ -45,7 +48,12 @@
   `(defn ~name ~(get-description name) 
      ([~@args] (btc-rpc ~(str name) ~@args))
      ([~@(butlast args)] (btc-rpc ~(str name) ~@(butlast args)))
-     )) 
+     ))
+(defmacro def-rpc-all-opt [name & args]
+  `(defn ~name ~(get-description name) 
+     ([~@args] (btc-rpc ~(str name) ~@args))
+     ([] (btc-rpc ~(str name)))
+     ))
 
 ;;--------RPC calls-----------
 
@@ -66,11 +74,12 @@
 
 (s/fdef getblockhash
   :args ::height      
-  :ret string?)
+  :ret ::hex-string)
 (def-rpc getblockhash height)
 
 (s/fdef getblockheader 
-  :args (s/alt :verbose (s/cat :hash string?), :choice (s/cat :hash string?, :verbose boolean?)))
+  :args (s/alt :verbose (s/cat :hash string?), :choice (s/cat :hash string?, :verbose boolean?))
+  :ret map?)
 (def-rpc-opt getblockheader hash verbose)
 
 (s/fdef getchaintips :ret vector?) 
@@ -86,7 +95,7 @@
 (def-rpc-opt getrawmempool verbose)
 (def-rpc-opt gettxout txid n include_mempool)
 
-;(s/def gettxoutproof ["txid",...] ( blockhash )
+(s/fdef gettxoutproof :args (s/alt :verbose (s/cat :txids vector?), :choice (s/cat :txids vector?, :blockhash boolean?)) :ret ::hex-string)
 (def-rpc gettxoutproof txids blockhash)
 
 (def-rpc gettxoutsetinfo)
@@ -180,7 +189,7 @@
 ;listreceivedbyaddress ( minconf include_empty include_watchonly)
 ;listsinceblock ( "blockhash" target_confirmations include_watchonly)
 ;listtransactions ( "account" count skip include_watchonly)
-;listunspent ( minconf maxconf  ["addresses",...] [include_unsafe] )
+(def-rpc-all-opt listunspent minconf maxconf  addresses include_unsafe)
 ;lockunspent unlock ([{"txid":"txid","vout":n},...])
 ;move "fromaccount" "toaccount" amount ( minconf "comment" )
 (def-rpc removeprunedfunds txid)
@@ -195,8 +204,7 @@
 ;;--------------------------------
 
 
-(defn get-block-hashes []
-  (map (partial btc-rpc "getblockhash") (range (btc-rpc "getblockcount"))))
+(defn get-block-hashes [] (map getblockhash (range (getblockcount))))
 
 (defn block-of [block-hash] (getblock block-hash))
 
