@@ -52,7 +52,7 @@
 
 (defmacro def-rpc-opt [name n & args]
   `(defn ~name ~(get-description name) 
-     ~@(map (comp #(concat % `((btc-rpc ~(str name) ~@(first %)))) list vec #(take % args)) (range (- (count args) n)))
+     ~@(map (comp #(concat % `((btc-rpc ~(str name) ~@(first %)))) list vec #(take % args)) (range (+ 1 (- (count args) n))))
      ))
 
 
