@@ -7,6 +7,10 @@
             [clojure.spec :as s]
             [clojure.spec.gen :as gen]))
 
+(defmacro dbg [body]
+  `(let [x# ~body]
+     (println "dbg:" '~body "=" x#)
+     x#))
 
 (defn btc-rpc [method & args]
   (let [res 
@@ -45,14 +49,9 @@
 (defmacro def-rpc [name & args]
   `(defn ~name ~(get-description name) [~@args] (btc-rpc ~(str name) ~@args))) 
 
-(defmacro dbg [body]
-  `(let [x# ~body]
-     (println "dbg:" '~body "=" x#)
-     x#))
-
 (defmacro def-rpc-opt [name n & args]
   `(defn ~name ~(get-description name) 
-     ~@(map (comp #(concat % `((btc-rpc ~(str name) ~@(first %)))) list vec #(take % args)) (range (+ 1 (- (count args) n))))
+     ~@(map (comp #(concat % `((btc-rpc ~(str name) ~@(first %)))) list vec #(take % args)) (range n (+ 1 (count args))))
      ))
 
 
