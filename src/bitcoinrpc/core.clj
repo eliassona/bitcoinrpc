@@ -49,11 +49,6 @@
   `(let [x# ~body]
      (println "dbg:" '~body "=" x#)
      x#))
-#_(defmacro def-rpc-opt [name n & args]
-   `(defn ~name ~(get-description name) 
-      ([~@args] (btc-rpc ~(str name) ~@args))
-      ([~@(take n args)] (btc-rpc ~(str name) ~@(take n args)))
-      ))
 
 (defmacro def-rpc-opt [name n & args]
   `(defn ~name ~(get-description name) 
@@ -146,13 +141,13 @@
 (def-rpc setnetworkactive b)
 
 ;== Rawtransactions ==
-;createrawtransaction [{"txid":"id","vout":n},...] {"address":amount,"data":"hex",...} ( locktime )
+(def-rpc-opt createrawtransaction 2 txids addresses locktime)
 (def-rpc decoderawtransaction hexstring)
 (def-rpc decodescript hexstring)
 (def-rpc-opt fundrawtransaction 1 hexstring options)
 (def-rpc-opt getrawtransaction 1 txid verbose)
 (def-rpc-opt sendrawtransaction 1 hexstring allowhighfees)
-;signrawtransaction "hexstring" ( [{"txid":"id","vout":n,"scriptPubKey":"hex","redeemScript":"hex"},...] ["privatekey1",...] sighashtype )
+(def-rpc-opt signrawtransaction 1 hexstring txids privatekeys sighashtype)
 
 ;== Util ==
 (def-rpc createmultisig nrequired the-keys)
@@ -189,11 +184,11 @@
 (def-rpc-opt gettransaction 1 txid include_watchonly)
 (def-rpc getunconfirmedbalance)
 (def-rpc getwalletinfo)
-;importaddress "address" ( "label" rescan p2sh )
+(def-rpc-opt importaddress 1 address label rescan p2sh)
 (def-rpc importmulti requests options)
-;importprivkey "bitcoinprivkey" ( "label" ) ( rescan )
+(def-rpc-opt importprivkey 1 bitcoinprivkey label rescan)
 (def-rpc importprunedfunds)
-;importpubkey "pubkey" ( "label" rescan )
+(def-rpc-opt importpubkey 1 pubkey label rescan)
 (def-rpc importwallet filename)
 (def-rpc-opt keypoolrefill 0 newsize)
 (def-rpc-opt listaccounts 0 minconf include_watchonly)
@@ -204,7 +199,7 @@
 (def-rpc-opt listsinceblock 0 blockhash target_confirmations include_watchonly)
 (def-rpc-opt listtransactions 0 account count skip include_watchonly)
 (def-rpc-opt listunspent 0 minconf maxconf  addresses include_unsafe)
-;lockunspent unlock ([{"txid":"txid","vout":n},...])
+(def-rpc-opt lockunspent 0 unlock todo)
 (def-rpc-opt move 3 fromaccount toaccount amount minconf comment)
 (def-rpc removeprunedfunds txid)
 (def-rpc-opt sendfrom 3 fromaccount toaddress amount  minconf comment comment_to)
