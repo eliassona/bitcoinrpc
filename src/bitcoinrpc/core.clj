@@ -12,15 +12,20 @@
      (println "dbg:" '~body "=" x#)
      x#))
 
+(def ^:private id (atom 0))
+
+(def config (atom {:user "", :password "tjabba", :url "http://localhost:18332"}))
+
 (defn btc-rpc [method & args]
-  (let [res 
-        (-> (client/post "http://localhost:18332" 
+  (let [{:keys [user password url]} @config
+        res 
+        (-> (client/post url 
                          {:body (json/write-str 
                                   {:method method
                                    :params args
-                                   :id "foo"})
+                                   :id (str "id" (swap! id inc))})
                           :headers {"Content-Type" "application/json; charset=utf-8"}
-                          :basic-auth ["" "tjabba"]
+                          :basic-auth [user password]
                           :throw-entire-message? true}) :body json/read-str)]
     (if-let
       [e (res "error")]
