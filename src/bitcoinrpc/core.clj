@@ -45,10 +45,19 @@
 (defmacro def-rpc [name & args]
   `(defn ~name ~(get-description name) [~@args] (btc-rpc ~(str name) ~@args))) 
 
+(defmacro dbg [body]
+  `(let [x# ~body]
+     (println "dbg:" '~body "=" x#)
+     x#))
+#_(defmacro def-rpc-opt [name n & args]
+   `(defn ~name ~(get-description name) 
+      ([~@args] (btc-rpc ~(str name) ~@args))
+      ([~@(take n args)] (btc-rpc ~(str name) ~@(take n args)))
+      ))
+
 (defmacro def-rpc-opt [name n & args]
   `(defn ~name ~(get-description name) 
-     ([~@args] (btc-rpc ~(str name) ~@args))
-     ([~@(take n args)] (btc-rpc ~(str name) ~@(take n args)))
+     ~@(map (comp #(concat % `((btc-rpc ~(str name) ~@(first %)))) list vec #(take % args)) (range (- (count args) n)))
      ))
 
 
@@ -172,7 +181,7 @@
 (def-rpc getaccount address)
 (def-rpc getaccountaddress account)
 (def-rpc getaddressesbyaccount account)
-;getbalance ( "account" minconf include_watchonly )
+(def-rpc-opt getbalance 0 account minconf include_watchonly)
 (def-rpc-opt getnewaddress 0 account)
 (def-rpc getrawchangeaddress)
 (def-rpc-opt getreceivedbyaccount 1 account minconf)
