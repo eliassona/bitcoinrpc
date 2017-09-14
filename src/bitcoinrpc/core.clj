@@ -40,14 +40,19 @@
 (s/def ::hex-string hex-string?)
 (s/def ::address string?)
 (s/def ::signature string?)
-(defn help 
+
+(defn split [s] (.split s "\n"))
+
+
+
+(defn split-help 
   ([]
-    (.split (btc-rpc "help") "\n"))
+    (split (btc-rpc "help")))
   ([cmd]
-    (.split (btc-rpc "help" cmd) "\n")))
+    (split (btc-rpc "help" cmd))))
 
 (defn get-description [name]
-  (loop [r (rest (help name))]
+  (loop [r (rest (split-help name))]
     (if (empty? (first r))
       (recur (rest r))
       (first r))))
@@ -240,19 +245,19 @@
 (defn print-it [a-list]
   (doseq [l a-list] (println l)))
 
-(defn print-help 
+(defmacro print-help 
   ([]
-    (print-it (.split (btc-rpc "help") "\n")))
+    (print-it (split-help)))
   ([cmd]
-    (print-it (.split (btc-rpc "help" cmd) "\n"))))
+    (print-it (split-help cmd))))
 
-(defn get-rpcs [] (map (fn [v] (symbol (first (.split v " ")))) (filter #(not (.startsWith % "==")) (help))))
+(defn get-rpcs [] (map (fn [v] (symbol (first (.split v " ")))) (filter #(not (.startsWith % "==")) (split-help))))
 
 (defn print-rpcs [] (doseq [s (get-rpcs)] (println s)))
   
   
 ;;---------------------------------------------------------------------------------
-;experimental
+;experiment
 
 (def help-parser
   (insta/parser
