@@ -6,7 +6,7 @@
             [clojure.repl :refer [source dir doc]]
             [clojure.spec :as s]
             [clojure.spec.gen :as gen]
-            [clojure.walk :refer [keywordize-keys]]))
+            [clojure.set :refer [subset?]]))
 
 (defmacro dbg [body]
   `(let [x# ~body]
@@ -31,7 +31,7 @@
     (if-let
       [e (res "error")]
       (throw (IllegalStateException. e))
-      (keywordize-keys (res "result")))))
+      (res "result"))))
 
 
 (def hex-string? (partial re-matches #"[0-9a-fA-F]+"))
@@ -146,13 +146,14 @@
 (def-rpc setnetworkactive b)
 
 ;== Rawtransactions ==
-(s/def :unq/txid-opt
-  (s/keys :req-un [::txid ::vout]))
-(s/def :unq/address-amount
-  (s/keys :req-un [::address ::amount]))
-
-
-;TODO (s/fdef createrawtransaction :args (s/cat :txids (s/* :unq/txid-opt) :addresses :unq/address-amount)) 
+(s/def ::txid-opt (s/and map? #(subset? #{"txid" "vout"} (into #{} (keys %))) #(string? (% "txid")) #(integer? (% "vout"))))
+(s/def ::txid-opts (s/* ::txid-opt))
+(s/def ::address-amount (s/and map? #(every? string? (keys %)) #(every? double? (vals %))))
+(s/fdef createrawtransaction 
+        :args (s/alt 
+                :no-lock (s/cat :input ::txid-opts, :output ::address-amount)
+                :lock (s/cat :input ::txid-opts, :output ::address-amount, :locktime integer?))
+        :ret ::hex-string) 
 (def-rpc-opt createrawtransaction 2 txids addresses locktime)
 
 (def-rpc decoderawtransaction hexstring)
