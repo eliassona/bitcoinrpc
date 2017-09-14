@@ -5,7 +5,8 @@
             [clj-http.client :as client]
             [clojure.repl :refer [source dir doc]]
             [clojure.spec :as s]
-            [clojure.spec.gen :as gen]))
+            [clojure.spec.gen :as gen]
+            [clojure.walk :refer [keywordize-keys]]))
 
 (defmacro dbg [body]
   `(let [x# ~body]
@@ -30,7 +31,7 @@
     (if-let
       [e (res "error")]
       (throw (IllegalStateException. e))
-      (res "result"))))
+      (keywordize-keys (res "result")))))
 
 
 (def hex-string? (partial re-matches #"[0-9a-fA-F]+"))
@@ -145,7 +146,15 @@
 (def-rpc setnetworkactive b)
 
 ;== Rawtransactions ==
+(s/def :unq/txid-opt
+  (s/keys :req-un [::txid ::vout]))
+(s/def :unq/address-amount
+  (s/keys :req-un [::address ::amount]))
+
+
+;TODO (s/fdef createrawtransaction :args (s/cat :txids (s/* :unq/txid-opt) :addresses :unq/address-amount)) 
 (def-rpc-opt createrawtransaction 2 txids addresses locktime)
+
 (def-rpc decoderawtransaction hexstring)
 (def-rpc decodescript hexstring)
 (def-rpc-opt fundrawtransaction 1 hexstring options)
