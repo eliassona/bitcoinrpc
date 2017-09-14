@@ -29,6 +29,7 @@ See the function names of the RPC API
 ```clojure
 => (print-rpcs)
 ```
+```bash
 getbestblockhash
 getblock
 getblockchaininfo
@@ -137,7 +138,8 @@ sendtoaddress
 setaccount
 settxfee
 signmessage
-nil
+```
+
 To see details about a function in the API, for example 'listunspent'
 ```clojure
 => (doc listunspent)
