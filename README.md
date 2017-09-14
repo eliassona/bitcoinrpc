@@ -25,6 +25,127 @@ Clojure usage:
 => (getinfo) ;get some info about the bitcoin server
 {:errors "", :protocolversion 70015, :difficulty 4.656542373906925E-10, :relayfee 1.0E-5, :keypoolsize 100, :keypoololdest 1504971951, :testnet false, :paytxfee 0.0, :balance 199.9998616, :proxy "", :timeoffset 0, :blocks 104, :connections 0, :walletversion 130000, :version 140200}
 ```
+See the function names of the RPC API
+```clojure
+=> (print-rpcs)
+```
+getbestblockhash
+getblock
+getblockchaininfo
+getblockcount
+getblockhash
+getblockheader
+getchaintips
+getdifficulty
+getmempoolancestors
+getmempooldescendants
+getmempoolentry
+getmempoolinfo
+getrawmempool
+gettxout
+gettxoutproof
+gettxoutsetinfo
+preciousblock
+pruneblockchain
+verifychain
+verifytxoutproof
+
+getinfo
+getmemoryinfo
+help
+stop
+
+generate
+generatetoaddress
+
+getblocktemplate
+getmininginfo
+getnetworkhashps
+prioritisetransaction
+submitblock
+
+addnode
+clearbanned
+disconnectnode
+getaddednodeinfo
+getconnectioncount
+getnettotals
+getnetworkinfo
+getpeerinfo
+listbanned
+ping
+setban
+setnetworkactive
+
+createrawtransaction
+decoderawtransaction
+decodescript
+fundrawtransaction
+getrawtransaction
+sendrawtransaction
+signrawtransaction
+
+createmultisig
+estimatefee
+estimatepriority
+estimatesmartfee
+estimatesmartpriority
+signmessagewithprivkey
+validateaddress
+verifymessage
+
+abandontransaction
+addmultisigaddress
+addwitnessaddress
+backupwallet
+bumpfee
+dumpprivkey
+dumpwallet
+encryptwallet
+getaccount
+getaccountaddress
+getaddressesbyaccount
+getbalance
+getnewaddress
+getrawchangeaddress
+getreceivedbyaccount
+getreceivedbyaddress
+gettransaction
+getunconfirmedbalance
+getwalletinfo
+importaddress
+importmulti
+importprivkey
+importprunedfunds
+importpubkey
+importwallet
+keypoolrefill
+listaccounts
+listaddressgroupings
+listlockunspent
+listreceivedbyaccount
+listreceivedbyaddress
+listsinceblock
+listtransactions
+listunspent
+lockunspent
+move
+removeprunedfunds
+sendfrom
+sendmany
+sendtoaddress
+setaccount
+settxfee
+signmessage
+nil
+To see details about a function in the API, for example 'listunspent'
+```clojure
+=> (doc listunspent)
+```
+-------------------------
+bitcoinrpc.core/listunspent
+([] [minconf] [minconf maxconf] [minconf maxconf addresses] [minconf maxconf addresses include_unsafe])
+  Returns array of unspent transaction outputs
 
 ## License
 

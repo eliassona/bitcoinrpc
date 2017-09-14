@@ -245,7 +245,10 @@
   ([cmd]
     (print-it (.split (btc-rpc "help" cmd) "\n"))))
 
+(defn get-rpcs [] (map (fn [v] (symbol (first (.split v " ")))) (filter #(not (.startsWith % "==")) (help))))
 
+(defn print-rpcs [] (doseq [s (get-rpcs)] (println s)))
+  
   
 ;;---------------------------------------------------------------------------------
 ;experimental
