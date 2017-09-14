@@ -144,10 +144,12 @@ To see details about a function in the API, for example 'listunspent'
 ```clojure
 => (doc listunspent)
 ```
+```bash
 -------------------------
 bitcoinrpc.core/listunspent
 ([] [minconf] [minconf maxconf] [minconf maxconf addresses] [minconf maxconf addresses include_unsafe])
   Returns array of unspent transaction outputs
+```
 
 ## License
 
