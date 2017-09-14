@@ -153,19 +153,21 @@ bitcoinrpc.core/listunspent
 
 Perform a simple raw transaction.
 ```clojure
-=> (def utxo (first (listunspent))) ;get an unspent tx 
+=> (def utxo (first (listunspent))) ;get an unspent tx
+ 
 => (def raw-tx (createrawtransaction [{"txid" (utxo "txid")
                                        "vout" (utxo "vout")}]
                                      {(getnewaddress) 49.9999})) ;create a raw transaction
+
 => (def signed-tx (signrawtransaction raw-tx)) ;sign the tx
+
 => (sendrawtransaction (signed-tx "hex")) ;send it to bitcoin core
 "88d73d56e2527c042858cbd0ff37cb8daafa3a2302849353ac8f65b30d1d7a1a" 
+
 => (generate 1) ;generate a block to confirm tx.
 ["32d7b44dd17b3adcbf3d61798d763d0b5db240507fa4cae056612b3e27b16a08"]
-                                    
-                                     
 ```
-
+Now you can view the newly create transaction with listunspent.
 
 ## License
 
