@@ -151,6 +151,17 @@ bitcoinrpc.core/listunspent
   Returns array of unspent transaction outputs
 ```
 
+To see details about the function from bitcoin core.
+
+```clojure
+=> (print-help listunspent)
+```
+```bash
+lot of text here......
+```
+
+
+
 Perform a simple raw transaction.
 ```clojure
 => (def utxo (first (listunspent))) ;get an unspent tx
