@@ -4,8 +4,8 @@
             [instaparse.core :as insta]
             [clj-http.client :as client]
             [clojure.repl :refer [source dir doc]]
-            [clojure.spec :as s]
-            [clojure.spec.gen :as gen]
+            [clojure.spec.alpha :as s]
+            [clojure.spec.gen.alpha :as gen]
             [clojure.set :refer [subset?]]))
 
 (defmacro dbg [body]
