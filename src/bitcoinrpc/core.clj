@@ -3,7 +3,7 @@
   (:require [clojure.data.json :as json]
             [instaparse.core :as insta]
             [clj-http.client :as client]
-            [clojure.repl :refer [source dir doc]]
+            [clojure.repl :refer [source source-fn dir doc]]
             [clojure.spec.alpha :as s]
             [clojure.spec.gen.alpha :as gen]
             [clojure.set :refer [subset?]]))
@@ -15,10 +15,9 @@
 
 (def ^:private id (atom 0))
 
-(def config (atom {:user "", :password "tjabba", :url "http://localhost:18332"}))
 
-(defn btc-rpc [method & args]
-  (let [{:keys [user password url]} @config
+(defn btc-rpc-fn [method config & args]
+  (let [{:keys [user password url]} config
         res 
         (-> (client/post url 
                          {:body (json/write-str 
@@ -32,6 +31,15 @@
       [e (res "error")]
       (throw (IllegalStateException. e))
       (res "result"))))
+
+(def config (atom {:user "", :password "tjabba", :url "http://localhost:18332"}))
+
+#_(defn btc-rpc [method & args]
+   (btc-rpc-fn method @config args))
+                
+
+
+
 
 
 (def hex-string? (partial re-matches #"[0-9a-fA-F]+"))
@@ -47,9 +55,9 @@
 
 (defn split-help 
   ([]
-    (split (btc-rpc "help")))
+    (split (btc-rpc-fn "help" @config)))
   ([cmd]
-    (split (btc-rpc "help" cmd))))
+    (split (btc-rpc-fn "help" @config cmd))))
 
 (defn get-description [name]
   (loop [r (rest (split-help name))]
@@ -57,12 +65,15 @@
       (recur (rest r))
       (first r))))
 
+(defn added-config [args] (conj args 'config))
+
+
 (defmacro def-rpc [name & args]
-  `(defn ~name ~(get-description name) [~@args] (btc-rpc ~(str name) ~@args))) 
+  `(defn ~name ~(get-description name) [~@(added-config args)] (btc-rpc-fn ~(str name) ~'config ~@args))) 
 
 (defmacro def-rpc-opt [name n & args]
   `(defn ~name ~(get-description name) 
-     ~@(map (comp #(concat % `((btc-rpc ~(str name) ~@(first %)))) list vec #(take % args)) (range n (+ 1 (count args))))
+     ~@(map (comp #(concat % `((btc-rpc-fn ~(str name) ~@(first %)))) list vec #(added-config (take % args))) (range n (+ 1 (count args))))
      ))
 
 
