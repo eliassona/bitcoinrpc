@@ -6,7 +6,10 @@
             [clojure.repl :refer [source source-fn dir doc]]
             [clojure.spec.alpha :as s]
             [clojure.spec.gen.alpha :as gen]
-            [clojure.set :refer [subset?]]))
+            [clojure.set :refer [subset?]]
+            [clojure.core.server :as sock-repl]
+            [clojure.main :as m]
+            ))
 
 (defmacro dbg [body]
   `(let [x# ~body]
@@ -266,7 +269,9 @@
 
 (defn print-rpcs [] (doseq [s (get-rpcs)] (println s)))
   
-  
+
+
+
 ;;---------------------------------------------------------------------------------
 ;experiment
 
@@ -286,3 +291,26 @@
 
 
 
+
+(defn repl-init []
+  (sock-repl/repl-init)
+  (require ['bitcoinrpc.core :as 'btc])
+  (use 'clojure.pprint)
+  (require ['clojure.repl :refer ['doc 'source]])
+  )
+
+
+(defn repl []
+  (m/repl 
+    :init repl-init
+    :read sock-repl/repl-read
+    :eval (fn [expr]
+            (eval expr)))
+  )
+
+
+(defn port []
+  (read-string (System/getProperty "mz.btc.port" "5566")))
+
+(defn start-repl-server []
+  (sock-repl/start-server {:port (port), :name "mz-btc-repl", :accept 'bitcoinrpc.core/repl}))
