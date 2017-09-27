@@ -335,11 +335,13 @@
 (defn arg-vals-of [args]
   (reduce (fn [acc v] (if (empty? acc) (format "%s" v) (format "%s, %s" acc v))) "" args))
 
+(defn java-fn-name-of [m] (format "btc%s" (normalize-name (:name m))))
+
 (defn java-method-of 
   ([m]
    (reduce (fn [acc v] (format "%s\n%s" acc v)) (flatten (map (comp (partial java-method-of m) rest) (:arglists m)))))
   ([m args]
-    (let [n (normalize-name (:name m))
+    (let [n (java-fn-name-of m)
           args (map normalize-name args)
           arg-vals (arg-vals-of args)]
       ["/**" 
@@ -365,7 +367,7 @@
   ))
 
 (defn java-signature-of [m]
-  (format "buildSignatureFromThreadSafeMethod(\"%s\")" (:name m))
+  (format "buildSignatureFromThreadSafeMethod(\"%s\")" (java-fn-name-of m))
   )
 
 (defn java-plugin-source-of [package classname]
@@ -404,3 +406,13 @@
   (spit (dbg filename)
         (java-plugin-source-of package classname))))
 
+
+
+(comment 
+  (gen-java-plugin-source! 
+  "/Users/anderse/src/mz-dev2/mz-main/mediationzone/packages/bitcoin/src/main/java" 
+  "com.digitalroute.mz.bitcoin.agent" "BitcoinRpc" )
+  (gen-java-executor-source! 
+  "/Users/anderse/src/mz-dev2/mz-main/mediationzone/packages/bitcoin/src/main/java" 
+  "com.digitalroute.mz.bitcoin.agent" "BitcoinRpcExecutor" "AbstractBitcoinRpc")
+  )
