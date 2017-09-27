@@ -9,7 +9,8 @@
             [clojure.set :refer [subset?]]
             [clojure.core.server :as sock-repl]
             [clojure.main :as m]
-            ))
+            )
+  (:import [java.io File]))
 
 (defmacro dbg [body]
   `(let [x# ~body]
@@ -79,6 +80,56 @@
      ~@(map (comp #(concat % `((btc-rpc-fn ~(str name) ~@(first %)))) list vec #(added-config (take % args))) (range n (+ 1 (count args))))
      ))
 
+(defn btc-meta []
+  (filter (fn [x] (:doc x)) (map (comp meta val) (ns-publics *ns*))))
+
+;;-------------------------java gen---------------------------
+
+(defn normalize-name [s] (.replaceAll (str s) "-" "_"))
+
+(defn arg-def-of [args]
+  (reduce (fn [acc v] (if (empty? acc) (format "final Object %s" v) (format "%s, final Object %s" acc v))) "" args))
+
+(defn arg-vals-of [args]
+  (reduce (fn [acc v] (if (empty? acc) (format "%s" v) (format "%s, %s" acc v))) "" args))
+
+(defn java-method-of 
+  ([m]
+   (reduce (fn [acc v] (format "%s\n%s" acc v)) (flatten (map (comp (partial java-method-of m) rest) (:arglists m)))))
+  ([m args]
+    (let [n (normalize-name (:name m))
+          args (map normalize-name args)
+          arg-vals (arg-vals-of args)]
+      ["/**" 
+      (str " *" (:doc m))
+      "**/"
+      (format "public Object %s(%s) {" n (arg-def-of args))
+      (format "return btcFnOf(\"%s\"%s);" (:name m) (if (empty? arg-vals) "" (format ", %s" arg-vals)))
+      "}"
+      ])))
+
+
+(defn java-class-of [package classname base-classname]
+  (reduce (fn [acc v] (format "%s\n%s" acc v)) [
+  (format "package %s;" package)
+  (format "public class %s extends %s {" classname base-classname)
+  (format "public %s(final String user, final String password, final String url) throws Exception {" classname)
+  "   super(user, password, url);"
+  "}"
+  (reduce (fn [acc v] (format "%s\n%s" acc v)) (map java-method-of (btc-meta)))
+  "}"
+  ]
+  ))
+
+(defn gen-java-source! [dest package classname base-classname]
+  (let [dir (File. dest)
+        p-dir (File. dir (.replace package "." "/"))
+        filename (File. (dbg p-dir) (format "%s.java" classname))]
+  (spit (dbg filename)
+        (java-class-of package classname base-classname))))
+
+
+;;----------------------------------------------------------------------------------------------
 
 ;;--------RPC calls-----------
 
