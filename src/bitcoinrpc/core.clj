@@ -83,50 +83,6 @@
 (defn btc-meta []
   (filter (fn [x] (:doc x)) (map (comp meta val) (ns-publics *ns*))))
 
-;;-------------------------java gen---------------------------
-
-(defn normalize-name [s] (.replaceAll (str s) "-" "_"))
-
-(defn arg-def-of [args]
-  (reduce (fn [acc v] (if (empty? acc) (format "final Object %s" v) (format "%s, final Object %s" acc v))) "" args))
-
-(defn arg-vals-of [args]
-  (reduce (fn [acc v] (if (empty? acc) (format "%s" v) (format "%s, %s" acc v))) "" args))
-
-(defn java-method-of 
-  ([m]
-   (reduce (fn [acc v] (format "%s\n%s" acc v)) (flatten (map (comp (partial java-method-of m) rest) (:arglists m)))))
-  ([m args]
-    (let [n (normalize-name (:name m))
-          args (map normalize-name args)
-          arg-vals (arg-vals-of args)]
-      ["/**" 
-      (str " *" (:doc m))
-      "**/"
-      (format "public Object %s(%s) {" n (arg-def-of args))
-      (format "return btcFnOf(\"%s\"%s);" (:name m) (if (empty? arg-vals) "" (format ", %s" arg-vals)))
-      "}"
-      ])))
-
-
-(defn java-class-of [package classname base-classname]
-  (reduce (fn [acc v] (format "%s\n%s" acc v)) [
-  (format "package %s;" package)
-  (format "public class %s extends %s {" classname base-classname)
-  (format "public %s(final String user, final String password, final String url) throws Exception {" classname)
-  "   super(user, password, url);"
-  "}"
-  (reduce (fn [acc v] (format "%s\n%s" acc v)) (map java-method-of (btc-meta)))
-  "}"
-  ]
-  ))
-
-(defn gen-java-source! [dest package classname base-classname]
-  (let [dir (File. dest)
-        p-dir (File. dir (.replace package "." "/"))
-        filename (File. (dbg p-dir) (format "%s.java" classname))]
-  (spit (dbg filename)
-        (java-class-of package classname base-classname))))
 
 
 ;;----------------------------------------------------------------------------------------------
@@ -365,3 +321,86 @@
 
 (defn start-repl-server []
   (sock-repl/start-server {:port (port), :name "mz-btc-repl", :accept 'bitcoinrpc.core/repl}))
+
+
+
+
+;;-------------------------java gen---------------------------
+
+(defn normalize-name [s] (.replace (str s) "-" "_"))
+
+(defn arg-def-of [args]
+  (reduce (fn [acc v] (if (empty? acc) (format "final Object %s" v) (format "%s, final Object %s" acc v))) "" args))
+
+(defn arg-vals-of [args]
+  (reduce (fn [acc v] (if (empty? acc) (format "%s" v) (format "%s, %s" acc v))) "" args))
+
+(defn java-method-of 
+  ([m]
+   (reduce (fn [acc v] (format "%s\n%s" acc v)) (flatten (map (comp (partial java-method-of m) rest) (:arglists m)))))
+  ([m args]
+    (let [n (normalize-name (:name m))
+          args (map normalize-name args)
+          arg-vals (arg-vals-of args)]
+      ["/**" 
+      (str " *" (:doc m))
+      "**/"
+      (format "public Object %s(%s) {" n (arg-def-of args))
+      (format "return btcFnOf(\"%s\"%s);" (:name m) (if (empty? arg-vals) "" (format ", %s" arg-vals)))
+      "}"
+      ])))
+
+
+(defn java-executor-source-of [package classname base-classname]
+  (reduce (fn [acc v] (format "%s\n%s" acc v)) [
+  (format "package %s;" package)
+  (format "public class %s extends %s {" classname base-classname)
+  (format "public %s() throws Exception { super(); }" classname)
+  (format "public %s(final String user, final String password, final String url) throws Exception {" classname)
+  "   super(user, password, url);"
+  "}"
+  (reduce (fn [acc v] (format "%s\n%s" acc v)) (map java-method-of (btc-meta)))
+  "}"
+  ]
+  ))
+
+(defn java-signature-of [m]
+  (format "buildSignatureFromThreadSafeMethod(\"%s\")" (:name m))
+  )
+
+(defn java-plugin-source-of [package classname]
+  (reduce (fn [acc v] (format "%s\n%s" acc v)) [
+  (format "package %s;" package)
+  "import com.digitalroute.devkit.apl.DRAPLPlugin;"
+  "import com.digitalroute.devkit.apl.DRAPLFunctionSignature;"
+  (format "public class %sPlugin extends DRAPLPlugin {" classname)
+  "@Override"
+  "public Class<?> getExecutorClass() {"
+  (format "  return %sExecutor.class;" classname)
+  "}"
+  "@Override"
+  "public DRAPLFunctionSignature[] getFunctions() {"
+  "return new DRAPLFunctionSignature[] {"
+  (reduce (fn [acc v] (format "%s,\n%s" acc v)) (map java-signature-of (btc-meta)))
+  
+  "};"
+  "}"
+  "}"
+   ]
+  ))
+
+
+(defn gen-java-executor-source! [dest package classname base-classname]
+  (let [dir (File. dest)
+        p-dir (File. dir (.replace package "." "/"))
+        filename (File. (dbg p-dir) (format "%s.java" classname))]
+  (spit (dbg filename)
+        (java-executor-source-of package classname base-classname))))
+
+(defn gen-java-plugin-source! [dest package classname]
+  (let [dir (File. dest)
+        p-dir (File. dir (.replace package "." "/"))
+        filename (File. (dbg p-dir) (format "%sPlugin.java" classname))]
+  (spit (dbg filename)
+        (java-plugin-source-of package classname))))
+
