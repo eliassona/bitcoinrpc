@@ -192,9 +192,9 @@
 ;== Util ==
 (def-rpc createmultisig nrequired the-keys)
 (def-rpc estimatefee nblocks)
-(def-rpc estimatepriority nblocks)
-(def-rpc estimatesmartfee nblocks)
-(def-rpc estimatesmartpriority nblocks)
+;(def-rpc estimatepriority nblocks)
+;(def-rpc estimatesmartfee nblocks)
+;(def-rpc estimatesmartpriority nblocks)
 
 (s/fdef signmessagewithprivkey :args (s/cat :privkey string?, :message string?) :ret ::signature)
 (def-rpc signmessagewithprivkey privkey message)
@@ -335,13 +335,13 @@
 (defn arg-vals-of [args]
   (reduce (fn [acc v] (if (empty? acc) (format "%s" v) (format "%s, %s" acc v))) "" args))
 
-(defn java-fn-name-of [m] (format "btc%s" (normalize-name (:name m))))
+(defn java-fn-name-of [i m] (format "btc%s%s" (normalize-name (:name m)) (if (> i 0) i "")))
 
 (defn java-method-of 
   ([m]
-   (reduce (fn [acc v] (format "%s\n%s" acc v)) (flatten (map (comp (partial java-method-of m) rest) (:arglists m)))))
-  ([m args]
-    (let [n (java-fn-name-of m)
+   (reduce (fn [acc v] (format "%s\n%s" acc v)) (flatten (map-indexed (fn [i v] (java-method-of i m (rest v))) (:arglists m)))))
+  ([i m args]
+    (let [n (java-fn-name-of i m)
           args (map normalize-name args)
           arg-vals (arg-vals-of args)]
       ["/**" 
@@ -366,9 +366,12 @@
   ]
   ))
 
-(defn java-signature-of [m]
-  (format "buildSignatureFromThreadSafeMethod(\"%s\")" (java-fn-name-of m))
+(defn java-signature-of [i m]
+  (format "buildSignatureFromThreadSafeMethod(\"%s\")" (java-fn-name-of i m))
   )
+
+(defn meta-with-index []
+  (mapcat (fn [x] (map (fn [i] [i x]) (range (-> x :arglists count)))) (btc-meta)))
 
 (defn java-plugin-source-of [package classname]
   (reduce (fn [acc v] (format "%s\n%s" acc v)) [
@@ -383,7 +386,7 @@
   "@Override"
   "public DRAPLFunctionSignature[] getFunctions() {"
   "return new DRAPLFunctionSignature[] {"
-  (reduce (fn [acc v] (format "%s,\n%s" acc v)) (map java-signature-of (btc-meta)))
+  (reduce (fn [acc v] (format "%s,\n%s" acc v)) (map (fn [[i x]] (java-signature-of i x)) (meta-with-index)))
   
   "};"
   "}"
