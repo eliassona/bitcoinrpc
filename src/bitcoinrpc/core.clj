@@ -38,13 +38,6 @@
 
 (def config (atom {:user "", :password "tjabba", :url "http://localhost:18332"}))
 
-#_(defn btc-rpc [method & args]
-   (btc-rpc-fn method @config args))
-                
-
-
-
-
 
 (def hex-string? (partial re-matches #"[0-9a-fA-F]+"))
 
