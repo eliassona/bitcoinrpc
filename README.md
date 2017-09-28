@@ -20,9 +20,9 @@ bitcoind -regtest -daemon
 Clojure usage:
 ```clojure
 (use 'bitcoinrpc.core)
-=> (getblockhash 0) ;get genesisblock
+=> (getblockhash @config 0) ;get genesisblock
 "0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206"
-=> (getinfo) ;get some info about the bitcoin server
+=> (getinfo @config ) ;get some info about the bitcoin server
 {:errors "", :protocolversion 70015, :difficulty 4.656542373906925E-10, :relayfee 1.0E-5, :keypoolsize 100, :keypoololdest 1504971951, :testnet false, :paytxfee 0.0, :balance 199.9998616, :proxy "", :timeoffset 0, :blocks 104, :connections 0, :walletversion 130000, :version 140200}
 ```
 See the function names of the RPC API
@@ -147,9 +147,8 @@ To see details about a function in the API, for example 'listunspent'
 ```bash
 -------------------------
 bitcoinrpc.core/listunspent
-([] [minconf] [minconf maxconf] [minconf maxconf addresses] [minconf maxconf addresses include_unsafe])
-  Returns array of unspent transaction outputs
-```
+([config] [config minconf] [config minconf maxconf] [config minconf maxconf addresses] [config minconf maxconf addresses include_unsafe])
+  Returns array of unspent transaction outputs```
 
 To see details about the function from bitcoin core.
 
@@ -160,22 +159,30 @@ To see details about the function from bitcoin core.
 lot of text here......
 ```
 
+Send 10 btc to a new address in the default wallet.
+
+=> (sendtoaddress @config (getnewaddress @config) 10.0)
+"0f95510160151a03ec0c8122448357aa67c085a5da2acabaa60ee7f288a35443"
+=> (generate @config 1) ;generate a block to confirm tx.
+["09f72bc3819457594ba360cdb171503330eaf6415308a1c8f1e1eec6bedd20f4"]
+
+Now you can view the newly create transaction with listunspent.
 
 
 Perform a simple raw transaction.
 ```clojure
-=> (def utxo (first (listunspent))) ;get an unspent tx
+=> (def utxo (first (listunspent @config))) ;get an unspent tx
  
-=> (def raw-tx (createrawtransaction [{"txid" (utxo "txid")
+=> (def raw-tx (createrawtransaction @config [{"txid" (utxo "txid")
                                        "vout" (utxo "vout")}]
-                                     {(getnewaddress) 49.9999})) ;create a raw transaction
+                                     {(getnewaddress @config) 49.9999})) ;create a raw transaction
 
-=> (def signed-tx (signrawtransaction raw-tx)) ;sign the tx
+=> (def signed-tx (signrawtransaction @config raw-tx)) ;sign the tx
 
-=> (sendrawtransaction (signed-tx "hex")) ;send it to bitcoin core
+=> (sendrawtransaction @config (signed-tx "hex")) ;send it to bitcoin core
 "88d73d56e2527c042858cbd0ff37cb8daafa3a2302849353ac8f65b30d1d7a1a" 
 
-=> (generate 1) ;generate a block to confirm tx.
+=> (generate @config 1) ;generate a block to confirm tx.
 ["32d7b44dd17b3adcbf3d61798d763d0b5db240507fa4cae056612b3e27b16a08"]
 ```
 Now you can view the newly create transaction with listunspent.
