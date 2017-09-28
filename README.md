@@ -161,10 +161,12 @@ lot of text here......
 
 Send 10 btc to a new address in the default wallet.
 
+```clojure
 => (sendtoaddress @config (getnewaddress @config) 10.0)
 "0f95510160151a03ec0c8122448357aa67c085a5da2acabaa60ee7f288a35443"
 => (generate @config 1) ;generate a block to confirm tx.
 ["09f72bc3819457594ba360cdb171503330eaf6415308a1c8f1e1eec6bedd20f4"]
+```
 
 Now you can view the newly create transaction with listunspent.
 
