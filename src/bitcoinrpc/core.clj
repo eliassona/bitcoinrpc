@@ -245,7 +245,6 @@
 (def-rpc settxfee amount)
 (def-rpc signmessage address message)
 
-
 ;;--------------------------------
 
 
@@ -279,9 +278,16 @@
   (insta/parser
     "BTC = (<'=='> SPACE TITLE SPACE <'=='> NEW-LINE FUNCTIONS)*
      FUNCTIONS = (FUNCTION NEW-LINE)*
-     FUNCTION = SYMBOL SPACE ARGS
+     FUNCTION = SYMBOL | (SYMBOL SPACE ARGS)
      ARGS = ((ARG SPACE)* ARG)*
-     ARG = (<'\"'> SYMBOL <'\"'>) | SYMBOL | (<'('> OPTIONAL-SPACE SYMBOL OPTIONAL-SPACE <')'>)
+     <ARG> = MAP-ARG | LIST-ARG | STRING-SYMBOL | SYMBOL | OPTIONAL-ARG
+     OPTIONAL-ARG = (<'('> OPTIONAL-SPACE ARG OPTIONAL-SPACE <')'>)
+     LIST-ARG = <'['> ARGS <',...'> <']'>
+     MAP-ARG = (<'{'>) ((KEY-VALUE <','>)* KEY-VALUE) (<'}'>)
+     KEY-VALUE = ARG <':'> ARG
+     OPEN-KEY-VALUE = (KEY-VALUE <',...'>)
+     STRING-SYMBOL = ('\"' SYMBOL '\"')
+     
      <TITLE> = SYMBOL
      NEW-LINE = '\n' | Epsilon
      SYMBOL = #'[a-zA-Z_]'  #'\\w'*
@@ -289,8 +295,43 @@
      <OPTIONAL-SPACE> = <#'[ \t\n]*'>
 "))
 
+(defn opt-arg-index-of [[i a]]
+  (if (and (vector? a) (= (first a) :OPTIONAL-ARG))
+    i
+    nil))
+
+(defn arg-index-of [args] 
+  (reduce 
+    (fn [acc v] 
+      (if acc acc (opt-arg-index-of v))) nil args))
+
+(defn function ([name arg-list] 
+  (let [args (map-indexed (fn [i a] [i a]) arg-list)
+        arg-ix (arg-index-of args)
+        arg-names (map (comp #(if (vector? %) (second %) %) second) args)]
+    (if arg-ix
+      `(def-rpc-opt ~name ~arg-ix ~@arg-names)
+      `(def-rpc ~name ~@arg-names))))
+  ([name] (function name [])))
 
 
+(def ast->clj-map 
+  { 
+   :FUNCTION function
+   :SYMBOL (comp symbol str)
+   :STRING-SYMBOL (fn [_ a _] a)
+   :ARGS (fn [& args] args)
+   })
+
+(defn ast->clj [ast]
+  (insta/transform
+    ast->clj-map 
+    ast))
+
+(defn def-rpcs [] 
+  (map #(ast->clj (help-parser % :start :FUNCTION)) (split-help)))
+
+;;--------------------------------------------------------
 
 (defn repl-init []
   (sock-repl/repl-init)
