@@ -276,19 +276,18 @@
 
 (def help-parser
   (insta/parser
-    "BTC = (<'=='> SPACE TITLE SPACE <'=='> NEW-LINE FUNCTIONS)*
-     FUNCTIONS = (FUNCTION NEW-LINE)*
+    "BTC = TITLE | FUNCTION | Epsilon
+     TITLE = (<'=='> SPACE SYMBOL SPACE <'=='>)
      FUNCTION = SYMBOL | (SYMBOL SPACE ARGS)
-     ARGS = ((ARG SPACE)* ARG)*
-     <ARG> = MAP-ARG | LIST-ARG | STRING-SYMBOL | SYMBOL | OPTIONAL-ARG
-     OPTIONAL-ARG = (<'('> OPTIONAL-SPACE ARG OPTIONAL-SPACE <')'>)
-     LIST-ARG = <'['> ARGS <',...'> <']'>
+     ARGS = ((ARG SPACE)* ARG) | Epsilon
+     <ARG> = MAP-ARG | LIST-ARG | STRING-SYMBOL | SYMBOL  | OPTIONAL-ARG
+     OPTIONAL-ARG = (<'('> OPTIONAL-SPACE (ARG | ARGS) OPTIONAL-SPACE <')'>)
+     LIST-ARG = <'['> ARG <',...'> <']'> 
      MAP-ARG = (<'{'>) ((KEY-VALUE <','>)* KEY-VALUE) (<'}'>)
      KEY-VALUE = ARG <':'> ARG
      OPEN-KEY-VALUE = (KEY-VALUE <',...'>)
      STRING-SYMBOL = ('\"' SYMBOL '\"')
      
-     <TITLE> = SYMBOL
      NEW-LINE = '\n' | Epsilon
      SYMBOL = #'[a-zA-Z_]'  #'\\w'*
      <SPACE> = <#'[ \t\n,]+'>
@@ -308,7 +307,7 @@
 (defn function ([name arg-list] 
   (let [args (map-indexed (fn [i a] [i a]) arg-list)
         arg-ix (arg-index-of args)
-        arg-names (map (comp #(if (vector? %) (second %) %) second) args)]
+        arg-names (flatten (map (comp #(if (vector? %) (second %) %) second) args))]
     (if arg-ix
       `(def-rpc-opt ~name ~arg-ix ~@arg-names)
       `(def-rpc ~name ~@arg-names))))
@@ -321,6 +320,10 @@
    :SYMBOL (comp symbol str)
    :STRING-SYMBOL (fn [_ a _] a)
    :ARGS (fn [& args] args)
+   :TITLE str
+   :BTC (fn 
+          ([a] a)
+          ([] nil))
    })
 
 (defn ast->clj [ast]
@@ -328,8 +331,14 @@
     ast->clj-map 
     ast))
 
+(def not-working #{"sendmany" "listunspent" "prioritisetransaction" "addnode" "disconnectnode" "setban" "setnetworkactive" "createrawtransaction" "bumpfee"})
+
+(defn valid-fn [l] 
+  (let [n (first (.split l " "))]
+    (not (contains? not-working n))))
+
 (defn def-rpcs [] 
-  (map #(ast->clj (help-parser % :start :FUNCTION)) (split-help)))
+  (map #(ast->clj (help-parser %)) (filter valid-fn (split-help))))
 
 ;;--------------------------------------------------------
 
