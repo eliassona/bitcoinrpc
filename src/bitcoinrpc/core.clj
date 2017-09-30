@@ -129,7 +129,6 @@
 (def-rpc-opt verifychain 0 checklevel nblocks)
 (def-rpc verifytxoutproof proof)
 
-
 ;== Control ==
 (def-rpc getinfo)
 (def-rpc getmemoryinfo)
@@ -144,7 +143,7 @@
 (def-rpc-opt getblocktemplate 0 TemplateRequest )
 (def-rpc getmininginfo)
 (def-rpc-opt getnetworkhashps 0 nblocks height)
-(def-rpc prioritisetransaction txid priority_delta fee_delta)
+#_(def-rpc prioritisetransaction txid priority_delta fee_delta)
 (def-rpc-opt submitblock 1 hexdata jsonparametersobject)
 
 ;== Network ==
@@ -173,7 +172,7 @@
                 :no-lock (s/cat :input ::txid-opts, :output ::address-amount)
                 :lock (s/cat :input ::txid-opts, :output ::address-amount, :locktime integer?))
         :ret ::hex-string) 
-(def-rpc-opt createrawtransaction 2 txids addresses locktime)
+#_(def-rpc-opt createrawtransaction 2 txids addresses locktime)
 
 (def-rpc decoderawtransaction hexstring)
 (def-rpc decodescript hexstring)
@@ -231,12 +230,12 @@
 (def-rpc-opt listreceivedbyaddress 0 minconf include_empty include_watchonly)
 (def-rpc-opt listsinceblock 0 blockhash target_confirmations include_watchonly)
 (def-rpc-opt listtransactions 0 account count skip include_watchonly)
-(def-rpc-opt listunspent 0 minconf maxconf  addresses include_unsafe)
+#_(def-rpc-opt listunspent 0 minconf maxconf  addresses include_unsafe)
 (def-rpc-opt lockunspent 0 unlock todo)
 (def-rpc-opt move 3 fromaccount toaccount amount minconf comment)
 (def-rpc removeprunedfunds txid)
 (def-rpc-opt sendfrom 3 fromaccount toaddress amount  minconf comment comment_to)
-(def-rpc-opt sendmany 2 fromaccount addess-map minconf comment addresses)
+#_(def-rpc-opt sendmany 2 fromaccount addess-map minconf comment addresses)
 
   
 
@@ -244,6 +243,8 @@
 (def-rpc setaccount address account)
 (def-rpc settxfee amount)
 (def-rpc signmessage address message)
+
+
 
 ;;--------------------------------
 
@@ -280,13 +281,14 @@
      TITLE = (<'=='> SPACE SYMBOL SPACE <'=='>)
      FUNCTION = SYMBOL | (SYMBOL SPACE ARGS)
      ARGS = ((ARG SPACE)* ARG) | Epsilon
-     <ARG> = MAP-ARG | LIST-ARG | STRING-SYMBOL | SYMBOL  | OPTIONAL-ARG
+     <ARG> = MAP-ARG | LIST-ARG | STRING-SYMBOL | SYMBOL  | OPTIONAL-ARG | ENUM
+     ENUM = ((SYMBOL <'|'>)* SYMBOL) | Epsilon
      OPTIONAL-ARG = (<'('> OPTIONAL-SPACE (ARG | ARGS) OPTIONAL-SPACE <')'>)
      LIST-ARG = <'['> ARG <',...'> <']'> 
      MAP-ARG = (<'{'>) ((KEY-VALUE <','>)* KEY-VALUE) (<'}'>)
      KEY-VALUE = ARG <':'> ARG
      OPEN-KEY-VALUE = (KEY-VALUE <',...'>)
-     STRING-SYMBOL = ('\"' SYMBOL '\"')
+     STRING-SYMBOL = ('\"' ARG '\"')
      
      NEW-LINE = '\n' | Epsilon
      SYMBOL = #'[a-zA-Z_]'  #'\\w'*
@@ -323,6 +325,7 @@
    :TITLE str
    :MAP-ARG (fn [& args] (symbol (str (reduce (fn [acc [_ k v]] (format "%s%s_%s" (if acc (str acc "-") "") k v)) nil args) "-map")))
    :LIST-ARG #(symbol (format "%s-list" %))
+   :ENUM (fn [& args] (reduce (fn [acc v] (format "%s%s" (if acc (str acc "-") "") v)) nil args))
    :BTC (fn 
           ([a] a)
           ([] nil))
@@ -333,18 +336,23 @@
     ast->clj-map 
     ast))
 
-(def not-working #{"sendmany" "listunspent" "prioritisetransaction" "addnode" "disconnectnode" "setban" "setnetworkactive" "createrawtransaction" "bumpfee"})
+(def not-working #{"prioritisetransaction" "createrawtransaction" "listunspent" "sendmany"})
 
 (defn valid-fn [l] 
   (let [n (first (.split l " "))]
     (not (contains? not-working n))))
 
+(defn parse [l]
+  (let [r (help-parser l)]
+    (if (insta/failure? r) 
+      (throw (IllegalStateException. (pr-str (insta/get-failure r)))) 
+      (ast->clj r))))
+
 (defn def-rpcs [] 
-  (conj 
-    (map 
-      #(let [r (help-parser %)]
-         (ast->clj r)) (filter valid-fn (split-help)))
-    'do))
+  (let [e (conj 
+            (map parse (filter valid-fn (split-help)))
+            'do)]
+    e))
 
 ;;--------------------------------------------------------
 
