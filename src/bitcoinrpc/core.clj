@@ -321,6 +321,8 @@
    :STRING-SYMBOL (fn [_ a _] a)
    :ARGS (fn [& args] args)
    :TITLE str
+   :MAP-ARG (fn [& args] (symbol (str (reduce (fn [acc [_ k v]] (format "%s%s_%s" (if acc (str acc "-") "") k v)) nil args) "-map")))
+   :LIST-ARG #(symbol (format "%s-list" %))
    :BTC (fn 
           ([a] a)
           ([] nil))
@@ -338,7 +340,11 @@
     (not (contains? not-working n))))
 
 (defn def-rpcs [] 
-  (map #(ast->clj (help-parser %)) (filter valid-fn (split-help))))
+  (conj 
+    (map 
+      #(let [r (help-parser %)]
+         (ast->clj r)) (filter valid-fn (split-help)))
+    'do))
 
 ;;--------------------------------------------------------
 
