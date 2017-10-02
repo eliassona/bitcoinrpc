@@ -183,6 +183,24 @@
 
 (def-rpcs)
 
+
+
+;; java interface
+;;TODO
+
+(defn method-args-of [m]
+  `~(:arglists m))
+
+(defn method-of [m]
+  `(~(:name m) ~@(method-args-of m))
+  )
+
+(defmacro def-java-api []
+  `(definterface IBtcRpc
+     ~(map method-of (btc-meta))
+     )
+  )
+
 ;;---------------socket repl-------------------------------
 
 (defn repl-init []
