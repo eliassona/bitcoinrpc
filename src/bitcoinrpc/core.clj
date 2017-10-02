@@ -9,8 +9,7 @@
             [clojure.set :refer [subset?]]
             [clojure.core.server :as sock-repl]
             [clojure.main :as m]
-            )
-  (:import [java.io File]))
+            ))
 
 (defmacro dbg [body]
   `(let [x# ~body]
@@ -36,8 +35,13 @@
       (throw (IllegalStateException. e))
       (res "result"))))
 
-(def config (atom {:user "", :password "tjabba", :url "http://localhost:18332"}))
+(defn sys-prop-of [name default-value]
+  (System/getProperty name default-value))
 
+(def config 
+  (atom {:user (sys-prop-of "bitcoinrpc.user" ""), 
+         :password (sys-prop-of "bitcoinrpc.password" "tjabba"), 
+         :url (sys-prop-of "bitcoinrpc.url" "http://localhost:18332")}))
 
 (def hex-string? (partial re-matches #"[0-9a-fA-F]+"))
 
@@ -47,8 +51,6 @@
 (s/def ::signature string?)
 
 (defn split [s] (.split s "\n"))
-
-
 
 (defn split-help 
   ([]
@@ -64,7 +66,6 @@
 
 (defn added-config [args] (conj args 'config))
 
-
 (defmacro def-rpc [name & args]
   `(defn ~name ~(get-description name) [~@(added-config args)] (btc-rpc-fn ~(str name) ~'config ~@args))) 
 
@@ -76,10 +77,7 @@
 (defn btc-meta []
   (filter (fn [x] (:doc x)) (map (comp meta val) (ns-publics *ns*))))
 
-
-
 ;;--------------------------------
-
 
 (defn print-it [a-list]
   (doseq [l a-list] (println l)))
@@ -93,9 +91,6 @@
 (defn get-rpcs [] (map (fn [v] (symbol (first (.split v " ")))) (filter #(not (.startsWith % "==")) (split-help))))
 
 (defn print-rpcs [] (doseq [s (get-rpcs)] (println s)))
-  
-
-
 
 ;;---------------------------------------------------------------------------------
 
@@ -114,7 +109,6 @@
      KEY-VALUE = ARG <':'> ARG
      OPEN-KEY-VALUE = (KEY-VALUE <',...'>)
      STRING-SYMBOL = ('\"' ARG '\"')
-     
      NEW-LINE = '\n' | Epsilon
      SYMBOL = #'[a-zA-Z_]'  #'\\w'*
      <SPACE> = <#'[ \t\n,]+'>
@@ -170,8 +164,6 @@
 (def-rpc-opt listunspent 0 minconf maxconf  addresses include_unsafe)
 (def-rpc-opt sendmany 2 fromaccount addess-map minconf comment addresses)
 
-
-
 (defn valid-fn [l] 
   (let [n (first (.split l " "))]
     (not (contains? not-working n))))
@@ -188,9 +180,10 @@
       (map parse (filter valid-fn (split-help)))
       'do)))
 
+
 (def-rpcs)
 
-;;--------------------------------------------------------
+;;---------------socket repl-------------------------------
 
 (defn repl-init []
   (sock-repl/repl-init)
@@ -208,110 +201,11 @@
             (eval expr)))
   )
 
-
 (defn port []
   (read-string (System/getProperty "mz.btc.port" "5566")))
 
 (defn start-repl-server []
   (sock-repl/start-server {:port (port), :name "mz-btc-repl", :accept 'bitcoinrpc.core/repl}))
 
-
-
-
 ;;-------------------------java gen---------------------------
-
-(defn normalize-name [s] (.replace (str s) "-" "_"))
-
-(defn arg-def-of [args]
-  (reduce (fn [acc v] (if (empty? acc) (format "final Object %s" v) (format "%s, final Object %s" acc v))) "" args))
-
-(defn arg-vals-of [args]
-  (reduce (fn [acc v] (if (empty? acc) (format "%s" v) (format "%s, %s" acc v))) "" args))
-
-(defn java-fn-name-of [i m] (format "btc%s%s" (normalize-name (:name m)) (if (> i 0) i "")))
-
-(defn java-method-of 
-  ([m]
-   (reduce (fn [acc v] (format "%s\n%s" acc v)) (flatten (map-indexed (fn [i v] (java-method-of i m (rest v))) (:arglists m)))))
-  ([i m args]
-    (let [n (java-fn-name-of i m)
-          args (map normalize-name args)
-          arg-vals (arg-vals-of args)]
-      ["/**" 
-      (str " *" (:doc m))
-      "**/"
-      (format "public Object %s(%s) {" n (arg-def-of args))
-      (format "return btcFnOf(\"%s\"%s);" (:name m) (if (empty? arg-vals) "" (format ", %s" arg-vals)))
-      "}"
-      ])))
-
-
-(defn java-executor-source-of [package classname base-classname]
-  (reduce (fn [acc v] (format "%s\n%s" acc v)) [
-  (format "package %s;" package)
-  (format "public class %s extends %s {" classname base-classname)
-  (format "public %s() throws Exception { super(); }" classname)
-  (format "public %s(final String user, final String password, final String url) throws Exception {" classname)
-  "   super(user, password, url);"
-  "}"
-  (reduce (fn [acc v] (format "%s\n%s" acc v)) (map java-method-of (btc-meta)))
-  "}"
-  ]
-  ))
-
-(defn java-signature-of [i m]
-  (format "buildSignatureFromThreadSafeMethod(\"%s\")" (java-fn-name-of i m))
-  )
-
-(defn meta-with-index []
-  (mapcat (fn [x] (map (fn [i] [i x]) (range (-> x :arglists count)))) (btc-meta)))
-
-(defn java-plugin-source-of [package classname]
-  (reduce (fn [acc v] (format "%s\n%s" acc v)) [
-  (format "package %s;" package)
-  "import com.digitalroute.devkit.apl.DRAPLPlugin;"
-  "import com.digitalroute.devkit.apl.DRAPLFunctionSignature;"
-  (format "public class %sPlugin extends DRAPLPlugin {" classname)
-  "@Override"
-  "public Class<?> getExecutorClass() {"
-  (format "  return %sExecutor.class;" classname)
-  "}"
-  "@Override"
-  "public DRAPLFunctionSignature[] getFunctions() {"
-  "return new DRAPLFunctionSignature[] {"
-  (reduce (fn [acc v] (format "%s,\n%s" acc v)) (map (fn [[i x]] (java-signature-of i x)) (meta-with-index)))
-  
-  "};"
-  "}"
-  "}"
-   ]
-  ))
-
-
-(defn gen-java-executor-source! [dest package classname base-classname]
-  (let [dir (File. dest)
-        p-dir (File. dir (.replace package "." "/"))
-        filename (File. (dbg p-dir) (format "%s.java" classname))]
-  (spit (dbg filename)
-        (java-executor-source-of package classname base-classname))))
-
-(defn gen-java-plugin-source! [dest package classname]
-  (let [dir (File. dest)
-        p-dir (File. dir (.replace package "." "/"))
-        filename (File. (dbg p-dir) (format "%sPlugin.java" classname))]
-  (spit (dbg filename)
-        (java-plugin-source-of package classname))))
-
-
-
-(comment 
-  (gen-java-plugin-source! 
-  "/Users/anderse/src/mz-dev2/mz-main/mediationzone/packages/bitcoin/src/main/java" 
-  "com.digitalroute.mz.bitcoin.agent" "BitcoinRpc" )
-  (gen-java-executor-source! 
-  "/Users/anderse/src/mz-dev2/mz-main/mediationzone/packages/bitcoin/src/main/java" 
-  "com.digitalroute.mz.bitcoin.agent" "BitcoinRpcExecutor" "AbstractBitcoinRpc")
-  )
-
-
 
