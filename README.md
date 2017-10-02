@@ -149,7 +149,7 @@ To see details about a function in the API, for example 'listunspent'
 bitcoinrpc.core/listunspent
 ([config] [config minconf] [config minconf maxconf] [config minconf maxconf addresses] [config minconf maxconf addresses include_unsafe])
   Returns array of unspent transaction outputs```
-
+```
 To see details about the function from bitcoin core.
 
 ```clojure
