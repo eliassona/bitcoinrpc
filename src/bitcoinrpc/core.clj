@@ -195,32 +195,35 @@
 
 (defn method-decl-of [fn-map]
   (let [n (:name fn-map)]
-    `[~n ~@(map #(mapv (fn [_] 'Object) %) (:arglists fn-map)) ~'Object]
+    (mapv (fn [x] [n (mapv (fn [_] 'Object) (rest x)) 'Object]) (:arglists fn-map))
     ))
 (defn method-name-of [n]
   (symbol (str "-" n)))
 
 (defn method-overload-of [name args]
-  ;(break!)
-  `(~(-> args rest vec) (~name ~@args)))
+  `(~(-> args rest (conj 'this) vec) (~name (.config ~'this) ~@(rest args))))
 
 (defn method-impl-of [fn-map]
   (let [n (:name fn-map)]
     `(defn ~(method-name-of n) ~@(map (partial method-overload-of n) (:arglists fn-map)))))
+
+(defn get-meta []
+  (btc-meta)
+  #_(-> (btc-meta) (nth 2) list))
 
 (defmacro def-java-api []
   `(do 
      (gen-class
        :name bitcoinrpc.BtcJava
        :state ~'config
-       :methods ~(mapv method-decl-of (btc-meta))
+       :methods ~(vec (mapcat method-decl-of (get-meta)))
        :init ~'init
        :constructors {[java.util.Map] []})
           
-     ~@(map method-impl-of (btc-meta))
+     ~@(map method-impl-of (get-meta))
      (defn ~'-init [config#]
        [[] config#])))
-;(def-java-api)
+(def-java-api)
 
 
   
@@ -252,18 +255,18 @@
 ;;-------------------------java gen---------------------------
 
 
-(gen-class
- :name bitcoinrpc.BtcJava
- :prefix "-"
- :methods [[foo [] String]
-           [foo [String] String]]
- )
+#_(gen-class
+  :name bitcoinrpc.BtcJava
+  :prefix "-"
+  :methods [[foo [] String]
+            [foo [String] String]]
+  )
 
-(defn -foo 
-  ([this]
-  (str (class this)))
-  ([this a]
-  (str (class this))))
+#_(defn -foo 
+   ([this]
+   (str (class this)))
+   ([this a]
+   (str (class this))))
 
 
 (compile 'bitcoinrpc.core)
