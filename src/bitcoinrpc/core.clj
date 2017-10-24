@@ -1,5 +1,7 @@
 (ns bitcoinrpc.core
-  (:use [clojure.pprint])
+  (:use [clojure.pprint]
+        [clojure.repl])
+  
   (:require [clojure.data.json :as json]
             [instaparse.core :as insta]
             [clj-http.client :as client]
@@ -9,6 +11,7 @@
             [clojure.set :refer [subset?]]
             [clojure.core.server :as sock-repl]
             [clojure.main :as m]
+            [com.gfredericks.debug-repl :refer [break! unbreak!]]
             ))
 
 (defmacro dbg [body]
@@ -188,18 +191,39 @@
 ;; java interface
 ;;TODO
 
-(defn method-args-of [m]
-  `~(:arglists m))
 
-(defn method-of [m]
-  `(~(:name m) ~@(method-args-of m))
-  )
+
+(defn method-decl-of [fn-map]
+  (let [n (:name fn-map)]
+    `[~n ~@(map #(mapv (fn [_] 'Object) %) (:arglists fn-map)) ~'Object]
+    ))
+(defn method-name-of [n]
+  (symbol (str "-" n)))
+
+(defn method-overload-of [name args]
+  ;(break!)
+  `(~(-> args rest vec) (~name ~@args)))
+
+(defn method-impl-of [fn-map]
+  (let [n (:name fn-map)]
+    `(defn ~(method-name-of n) ~@(map (partial method-overload-of n) (:arglists fn-map)))))
 
 (defmacro def-java-api []
-  `(definterface IBtcRpc
-     ~(map method-of (btc-meta))
-     )
-  )
+  `(do 
+     (gen-class
+       :name bitcoinrpc.BtcJava
+       :state ~'config
+       :methods ~(mapv method-decl-of (btc-meta))
+       :init ~'init
+       :constructors {[java.util.Map] []})
+          
+     ~@(map method-impl-of (btc-meta))
+     (defn ~'-init [config#]
+       [[] config#])))
+;(def-java-api)
+
+
+  
 
 ;;---------------socket repl-------------------------------
 
@@ -227,3 +251,19 @@
 
 ;;-------------------------java gen---------------------------
 
+
+(gen-class
+ :name bitcoinrpc.BtcJava
+ :prefix "-"
+ :methods [[foo [] String]
+           [foo [String] String]]
+ )
+
+(defn -foo 
+  ([this]
+  (str (class this)))
+  ([this a]
+  (str (class this))))
+
+
+(compile 'bitcoinrpc.core)
