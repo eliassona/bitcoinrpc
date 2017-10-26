@@ -10,6 +10,7 @@
                  [org.clojure/data.json "0.2.6"]
                  [instaparse "1.4.7"]
                  [org.clojure/test.check "0.9.0"]]
+  :aot [bitcoinrpc.btcjava]
   :repl-options
   {:nrepl-middleware
     [com.gfredericks.debug-repl/wrap-debug-repl]})

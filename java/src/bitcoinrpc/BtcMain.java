@@ -14,6 +14,7 @@ public class BtcMain {
 	public static void main(final String[] args) throws IOException {
 		final IFn require = Clojure.var(CLOJURE_CORE, "require");
 		require.invoke(Clojure.read(BITCOINRPC_CORE));
+	
 		final IFn startReplServer = Clojure.var(BITCOINRPC_CORE, "start-repl-server");
 		System.out.println("start repl...");
 		System.out.println(startReplServer.invoke());

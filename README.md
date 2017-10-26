@@ -4,6 +4,7 @@ A Clojure library for bitcoin RPC
 
 ## Usage
 
+### Clojure
 
 First install bitcoin core somewhere in your path i.e /usr/bin.
 If you want to use bitcoinrpc with default settings add/edit the file bitcoin.conf (on mac located in ~/Library/Application Support/Bitcoin) with the following:
@@ -188,6 +189,27 @@ Perform a simple raw transaction.
 ["32d7b44dd17b3adcbf3d61798d763d0b5db240507fa4cae056612b3e27b16a08"]
 ```
 Now you can view the newly create transaction with listunspent.
+
+### Java
+
+A java class BtcJava is also AOT compiled into the jar. It is compiled using bitcoind v0.14.2. The java class is generated from the clojure API so the method names are the same as the clojure function names. The methods have all one argument less though, the first argument. It is passed in the constructor instead. Currently all parameters and return types are of type Object. In a later version of this library it may be possible to extract the type info from bitcoind RPC and use in the generated java class.   
+Example usage:
+
+```javaa
+
+import bitcoinrpc.BtcJava;
+
+public class BtcJavaTest {
+	public static void main(final String[] args) {
+		final BtcJava btc = new BtcJava("", "tjabba", "http://localhost:18332")
+		System.out.println(btc.listunspent());
+	}
+}
+
+````
+
+
+
 
 ## License
 

@@ -11,7 +11,7 @@
             [clojure.set :refer [subset?]]
             [clojure.core.server :as sock-repl]
             [clojure.main :as m]
-            [com.gfredericks.debug-repl :refer [break! unbreak!]]
+            ;[com.gfredericks.debug-repl :refer [break! unbreak!]]
             ))
 
 (defmacro dbg [body]
@@ -78,7 +78,7 @@
      ))
 
 (defn btc-meta []
-  (filter (fn [x] (:doc x)) (map (comp meta val) (ns-publics *ns*))))
+  (filter (fn [x] (:doc x)) (map (comp meta val) (ns-publics 'bitcoinrpc.core))))
 
 ;;--------------------------------
 
@@ -188,42 +188,6 @@
 
 
 
-;; java interface
-;;TODO
-
-
-
-(defn method-decl-of [fn-map]
-  (let [n (:name fn-map)]
-    (mapv (fn [x] [n (mapv (fn [_] 'Object) (rest x)) 'Object]) (:arglists fn-map))
-    ))
-(defn method-name-of [n]
-  (symbol (str "-" n)))
-
-(defn method-overload-of [name args]
-  `(~(-> args rest (conj 'this) vec) (~name (.config ~'this) ~@(rest args))))
-
-(defn method-impl-of [fn-map]
-  (let [n (:name fn-map)]
-    `(defn ~(method-name-of n) ~@(map (partial method-overload-of n) (:arglists fn-map)))))
-
-(defn get-meta []
-  (btc-meta)
-  #_(-> (btc-meta) (nth 2) list))
-
-(defmacro def-java-api []
-  `(do 
-     (gen-class
-       :name bitcoinrpc.BtcJava
-       :state ~'config
-       :methods ~(vec (mapcat method-decl-of (get-meta)))
-       :init ~'init
-       :constructors {[java.util.Map] []})
-          
-     ~@(map method-impl-of (get-meta))
-     (defn ~'-init [config#]
-       [[] config#])))
-(def-java-api)
 
 
   
@@ -255,18 +219,5 @@
 ;;-------------------------java gen---------------------------
 
 
-#_(gen-class
-  :name bitcoinrpc.BtcJava
-  :prefix "-"
-  :methods [[foo [] String]
-            [foo [String] String]]
-  )
-
-#_(defn -foo 
-   ([this]
-   (str (class this)))
-   ([this a]
-   (str (class this))))
 
 
-(compile 'bitcoinrpc.core)
