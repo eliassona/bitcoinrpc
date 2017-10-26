@@ -29,7 +29,8 @@ Add the following line to your leinigen dependencies:
 ```
 
 ```clojure
-(use 'bitcoinrpc.core)
+=> (use 'bitcoinrpc.core)
+nil
 => (getblockhash @config 0) ;get genesisblock
 "0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206"
 => (getinfo @config ) ;get some info about the bitcoin server
