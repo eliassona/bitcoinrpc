@@ -1,10 +1,10 @@
 # bitcoinrpc
 
-A Clojure library for bitcoin RPC
+A Clojure/Java library for bitcoin RPC.
+The complete bitcoin API is extracted and generated into clojure and java from bitcoind-help data. It has only been tested with bitcoind v0.14.2 on MAC-OS.
 
 ## Usage
 
-### Clojure
 
 First install bitcoin core somewhere in your path i.e /usr/bin.
 If you want to use bitcoinrpc with default settings add/edit the file bitcoin.conf (on mac located in ~/Library/Application Support/Bitcoin) with the following:
@@ -17,6 +17,7 @@ Start bitcoind (using regtest mode here to be on the safe side)!
 ```bash
 bitcoind -regtest -daemon
 ```
+### Clojure
 
 Clojure usage:
 ```clojure
@@ -192,21 +193,22 @@ Now you can view the newly create transaction with listunspent.
 
 ### Java
 
-A java class BtcJava is also AOT compiled into the jar. It is compiled using bitcoind v0.14.2. The java class is generated from the clojure API so the method names are the same as the clojure function names. The methods have all one argument less though, the first argument. It is passed in the constructor instead. Currently all parameters and return types are of type Object. In a later version of this library it may be possible to extract the type info from bitcoind RPC and use in the generated java class.   
+If you'd rather use java. There is a java class ```java BtcJava ``` AOT compiled into the jar. It is compiled using bitcoind v0.14.2. The java class is generated from the clojure API so the method names have the same name as the clojure function names. The methods have all one argument less though, the first argument. It is passed in the constructor instead. Currently all parameters and return types are of type Object. In a later version of this library it may be possible to extract the type info from bitcoind RPC and use in the generated java class.   
 Example usage:
 
-```javaa
+```java
 
 import bitcoinrpc.BtcJava;
 
 public class BtcJavaTest {
 	public static void main(final String[] args) {
-		final BtcJava btc = new BtcJava("", "tjabba", "http://localhost:18332")
-		System.out.println(btc.listunspent());
+		final BtcJava btc = new BtcJava("", "tjabba", "http://localhost:18332");
+		System.out.println(btc.getblockhash(0)); //get the genesis block
+		System.out.println(btc.listunspent());   //list unspent transactions
 	}
 }
 
-````
+```
 
 
 
