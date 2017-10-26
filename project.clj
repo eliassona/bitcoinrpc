@@ -1,6 +1,6 @@
 (defproject bitcoinrpc "0.1.0-SNAPSHOT"
-  :description "FIXME: write description"
-  :url "http://example.com/FIXME"
+  :description "Clojure and Java API for Bitcoin RPC"
+  :url "https://github.com/eliassona/bitcoinrpc"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :java-source-paths ["java/src"]

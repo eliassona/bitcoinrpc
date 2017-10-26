@@ -23,8 +23,11 @@ The code below uses the atom config which contains a map with the default settin
 
 
 ### Clojure
+Add the following line to your leinigen dependencies:
+```clojure
+[bitcoinrpc "0.1.0-SNAPSHOT"]
+```
 
-Clojure usage:
 ```clojure
 (use 'bitcoinrpc.core)
 => (getblockhash @config 0) ;get genesisblock
