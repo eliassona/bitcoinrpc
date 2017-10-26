@@ -12,15 +12,16 @@ I added the following password to bitcoin.conf (on mac located in ~/Library/Appl
 rpcpassword=tjabba
 ```
 
-It probably works without password, but that hasn't been tested.
-The code below uses the atom config which contains a map with the default settings for user, password and url.
-
-
 Start bitcoind (using regtest mode here to be on the safe side)!
 
 ```bash
 bitcoind -regtest -daemon
 ```
+
+Note, it probably works without password, but that hasn't been tested.
+The code below uses the atom config which contains a map with the default settings for user, password and url.
+
+
 ### Clojure
 
 Clojure usage:
