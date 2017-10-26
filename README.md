@@ -7,10 +7,14 @@ The complete bitcoin API is extracted and generated into clojure and java from b
 
 
 First install bitcoin core somewhere in your path i.e /usr/bin.
-If you want to use bitcoinrpc with default settings add/edit the file bitcoin.conf (on mac located in ~/Library/Application Support/Bitcoin) with the following:
+I added the following password to bitcoin.conf (on mac located in ~/Library/Application Support/Bitcoin) with the following:
 ```bash
 rpcpassword=tjabba
 ```
+
+It probably works without password, but that hasn't been tested.
+The code below uses the atom config which contains a map with the default settings for user, password and url.
+
 
 Start bitcoind (using regtest mode here to be on the safe side)!
 
@@ -189,11 +193,11 @@ Perform a simple raw transaction.
 => (generate @config 1) ;generate a block to confirm tx.
 ["32d7b44dd17b3adcbf3d61798d763d0b5db240507fa4cae056612b3e27b16a08"]
 ```
-Now you can view the newly create transaction with listunspent.
+Now you can view the newly created transaction with listunspent.
 
 ### Java
 
-If you'd rather use java. There is a java class ```java BtcJava ``` AOT compiled into the jar. It is compiled using bitcoind v0.14.2. The java class is generated from the clojure API so the method names have the same name as the clojure function names. The methods have all one argument less though, the first argument. It is passed in the constructor instead. Currently all parameters and return types are of type Object. In a later version of this library it may be possible to extract the type info from bitcoind RPC and use in the generated java class.   
+If you'd rather use java, there is a java class called BtcJava, it is AOT compiled into the jar. It is compiled using bitcoind v0.14.2. The java class is generated from the clojure API so the method names have the same name as the clojure function names. The methods have all one argument less though, the first argument. It is passed in the constructor of BtcJava instead. Currently all parameters and return types are of type Object. In a later version of this library it might be possible to extract the type info from bitcoind RPC and use in the generated java class.   
 Example usage:
 
 ```java
