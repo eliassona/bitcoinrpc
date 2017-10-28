@@ -11,6 +11,7 @@
             [clojure.set :refer [subset?]]
             [clojure.core.server :as sock-repl]
             [clojure.main :as m]
+            [clojure.set :as set]
             ;[com.gfredericks.debug-repl :refer [break! unbreak!]]
             ))
 
@@ -80,6 +81,108 @@
 (defn btc-meta []
   (filter (fn [x] (:doc x)) (map (comp meta val) (ns-publics 'bitcoinrpc.core))))
 
+(defn argname-set 
+ []
+ (into #{} (reduce concat (map (comp last :arglists) (btc-meta)))))
+
+(defn arg->fns [arg]
+ (filter 
+   identity 
+   (map
+     (fn [f] 
+       (let [args (into #{} (-> f :arglists last))]
+         (when (contains? args arg)
+           (:name f))))
+     (btc-meta))))
+  
+
+(def arg->type
+  {
+   'minconf :long
+   'maxconf :long
+   'addresses :list
+   'include_unsafe :boolean
+   'verbose :boolean
+   'address :string
+   'account :string
+   'fromaccount :string
+   'toaddress :string
+   'comment :string
+   'comment_to :string
+   'amount :string
+   'include_empty :boolean
+   'include_watchonly :boolean
+   'blockhash :string
+   'target_confirmations :long
+   'count :long
+   'skip :long
+   'pubkey :string
+   'label :string
+   'rescan :boolean
+   'filename :string
+   'newsize :long
+   'passphrase :string
+   'message :string
+   'txid :string
+   'options :map
+   'nrequired :long
+   'keys :list
+   'destination :string
+   'script :string
+   'p2sh :boolean
+   'privkey :string
+   'height :long
+   'subtractfeefromamount :boolean
+   'toaccount :string
+   'nblocks :long
+   'priority-delta :long
+   'fee-delta :long
+   'maxtries :long
+   'requests :list
+   'addess-map :object
+   'subtractfeefrom :list
+   'txids :list
+   'hash :string
+   'bitcoinprivkey :string
+   'proof :string
+   'checklevel :long
+   'key-list :list
+   'hexstring :string
+   'signature :string
+   'sighashtype :string
+   'locktime :long
+   'include_mempool :boolean
+   'allowhighfees :boolean
+   'TemplateRequest :object
+   'add-remove :string
+   'subnet :string
+   'command :string
+   'absolute :boolean
+   'add-remove-onetry :string
+   'config :object
+   'txid-list :list
+   'privatekey1-list :list
+   'bantime :long
+   'node :string
+   'hexdata :string
+   'unlock :boolean
+   'txid_id-vout_n-scriptPubKey_hex-redeemScript_hex-map-list :list
+   'jsonparametersobject :object
+   'txid_txid-vout_n-map-list :list
+   'n :long
+   'true-false :boolean
+   })
+
+(defn missing-types []
+ (let [args (into #{} (keys arg->type))
+       d (set/difference (argname-set) args)]
+   d))
+
+(let [mt (missing-types)]
+ (when (not (empty? mt))
+   (throw (IllegalStateException. (format "Missing types for %s arguments: %s" (count mt) (pr-str mt))))))
+
+
 ;;--------------------------------
 
 (defn print-it [a-list]
@@ -94,6 +197,8 @@
 (defn get-rpcs [] (map (fn [v] (symbol (first (.split v " ")))) (filter #(not (.startsWith % "==")) (split-help))))
 
 (defn print-rpcs [] (doseq [s (get-rpcs)] (println s)))
+
+
 
 ;;---------------------------------------------------------------------------------
 

@@ -1,7 +1,7 @@
 # bitcoinrpc
 
-A Clojure/Java library for bitcoin RPC.
-The complete bitcoin API is extracted and generated into clojure and java from bitcoind-help data. It has only been tested with bitcoind v0.14.2 on MAC-OS.
+A Clojure/Java library for bitcoind RPC.
+The complete bitcoin API is extracted and generated into clojure and java from bitcoind-help data. It has only been tested with bitcoind v0.14.2 on MAC-OS. 
 
 ## Usage
 

@@ -1,9 +1,22 @@
 (ns bitcoinrpc.btcjava
+  (:use [clojure.pprint])
   (:require [bitcoinrpc.core :refer :all]))
+
+(def kw->java-type
+  {:long 'long
+   :string 'String
+   :list 'java.util.List
+   :map 'java.util.Map
+   :boolean 'boolean
+   :object 'Object})
+
+
+(defn java-type-of [arg]
+  (-> arg arg->type kw->java-type))
 
 (defn method-decl-of [fn-map]
   (let [n (:name fn-map)]
-    (mapv (fn [x] [n (mapv (fn [_] 'Object) (rest x)) 'Object]) (:arglists fn-map))
+    (mapv (fn [x] [n (mapv java-type-of (rest x)) 'Object]) (:arglists fn-map))
     ))
 (defn method-name-of [n]
   (symbol (str "-" n)))
