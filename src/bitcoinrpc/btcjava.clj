@@ -8,15 +8,18 @@
    :list 'java.util.List
    :map 'java.util.Map
    :boolean 'boolean
-   :object 'Object})
+   :object 'Object
+   :double 'double})
 
 
-(defn java-type-of [arg]
+(defn java-arg-type-of [arg]
   (-> arg arg->type kw->java-type))
+(defn java-return-type-of [arg]
+  (-> arg fn->type kw->java-type))
 
 (defn method-decl-of [fn-map]
   (let [n (:name fn-map)]
-    (mapv (fn [x] [n (mapv java-type-of (rest x)) 'Object]) (:arglists fn-map))
+    (mapv (fn [x] [n (mapv java-arg-type-of (rest x)) (java-return-type-of n)]) (:arglists fn-map))
     ))
 (defn method-name-of [n]
   (symbol (str "-" n)))

@@ -173,14 +173,122 @@
    'true-false :boolean
    })
 
-(defn missing-types []
- (let [args (into #{} (keys arg->type))
-       d (set/difference (argname-set) args)]
-   d))
 
-(let [mt (missing-types)]
- (when (not (empty? mt))
-   (throw (IllegalStateException. (format "Missing types for %s arguments: %s" (count mt) (pr-str mt))))))
+
+(def fn->type 
+  {'abandontransaction :object
+   'addmultisigaddress :string
+   'addnode :object
+   'addwitnessaddress :string
+   'backupwallet :object
+   'bumpfee :map
+   'clearbanned :object
+   'createmultisig :map
+   'createrawtransaction :string
+   'decoderawtransaction :map
+   'decodescript :map
+   'disconnectnode :object
+   'dumpprivkey :string
+   'dumpwallet :object
+   'encryptwallet :object
+   'estimatefee :long
+   'estimatepriority :long
+   'estimatesmartfee :map
+   'estimatesmartpriority :map
+   'fundrawtransaction :map
+   'generate :list
+   'generatetoaddress :list
+   'getaccount :string
+   'getaccountaddress :string
+   'getaddednodeinfo :list
+   'getaddressesbyaccount :list
+   'getbalance :double
+   'getbestblockhash :string
+   'getblock :object
+   'getblockchaininfo :map
+   'getblockcount :long
+   'getblockhash :string
+   'getblockheader :object
+   'getblocktemplate :map
+   'getchaintips :list
+   'getconnectioncount :long
+   'getdifficulty :double
+   'getinfo :map
+   'getmemoryinfo :map
+   'getmempoolancestors :object
+   'getmempooldescendants :object
+   'getmempoolentry :map
+   'getmempoolinfo :map
+   'getmininginfo :map
+   'getnettotals :map
+   'getnetworkhashps :double
+   'getnetworkinfo :map
+   'getnewaddress :string
+   'getpeerinfo :list
+   'getrawchangeaddress :string
+   'getrawmempool :object
+   'getrawtransaction :object
+   'getreceivedbyaccount :double
+   'getreceivedbyaddress :double
+   'gettransaction :map
+   'gettxout :map
+   'gettxoutproof :string
+   'gettxoutsetinfo :map
+   'getunconfirmedbalance :double
+   'getwalletinfo :map
+   'help :string
+   'importaddress :object
+   'importmulti :list
+   'importprivkey :object
+   'importprunedfunds :object
+   'importpubkey :object
+   'importwallet :object
+   'keypoolrefill :object
+   'listaccounts :map
+   'listaddressgroupings :list
+   'listbanned :list
+   'listlockunspent :list
+   'listreceivedbyaccount :list
+   'listreceivedbyaddress :list
+   'listsinceblock :map
+   'listtransactions :list
+   'listunspent :list
+   'lockunspent :boolean
+   'move :boolean
+   'ping :object
+   'preciousblock :object
+   'prioritisetransaction :boolean
+   'pruneblockchain :long
+   'removeprunedfunds :object
+   'sendfrom :string
+   'sendmany :string
+   'sendrawtransaction :string
+   'sendtoaddress :string
+   'setaccount :object
+   'setban :object
+   'setnetworkactive :object
+   'settxfee :boolean
+   'signmessage :string
+   'signmessagewithprivkey :string
+   'signrawtransaction :map
+   'stop :object
+   'submitblock :object
+   'validateaddress :map
+   'verifychain :boolean
+   'verifymessage :boolean
+   'verifytxoutproof :list
+   })
+
+(defn missing-arg-types [] (set/difference (argname-set) (into #{} (keys arg->type))))
+(defn missing-return-types [] (set/difference (retname-set) (into #{} (keys fn->type))))
+
+(defn assert-missing-types [the-set]
+ (when (not (empty? the-set))
+   (throw (IllegalStateException. (format "Missing types for %s arguments: %s" (count the-set) (pr-str the-set))))))
+
+(assert-missing-types (missing-arg-types))
+
+
 
 
 ;;--------------------------------
@@ -198,6 +306,8 @@
 
 (defn print-rpcs [] (doseq [s (get-rpcs)] (println s)))
 
+(defn retname-set [] (into #{} (get-rpcs)))
+;(assert-missing-types (missing-return-types))
 
 
 ;;---------------------------------------------------------------------------------
