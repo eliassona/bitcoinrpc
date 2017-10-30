@@ -155,7 +155,7 @@ To see details about a function in the API, for example 'listunspent'
 ```clojure
 => (doc listunspent)
 ```
-```bash
+```clojure
 -------------------------
 bitcoinrpc.core/listunspent
 ([config] [config minconf] [config minconf maxconf] [config minconf maxconf addresses] [config minconf maxconf addresses include_unsafe])
@@ -202,7 +202,7 @@ Now you can view the newly created transaction with listunspent.
 
 ### Java
 
-If you'd rather use java, there is a java class called BtcJava, it is AOT compiled into the jar. It is compiled using bitcoind v0.14.2. The java class is generated from the clojure API so the method names have the same name as the clojure function names. The methods have all one argument less though, the first argument. It is passed in the constructor of BtcJava instead. Currently all parameters and return types are of type Object. In a later version of this library it might be possible to extract the type info from bitcoind RPC and use in the generated java class.   
+If you'd rather use java, there is a java class called BtcJava, it is AOT compiled into the jar. It is compiled using bitcoind v0.14.2. The java class is generated from the clojure API so the method names have the same name as the clojure function names. The methods have all one argument less though, the first argument. It is passed in the constructor of BtcJava instead. .   
 Example usage:
 
 ```java
