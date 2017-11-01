@@ -1,4 +1,5 @@
 (ns bitcoinrpc.core
+  "Bitcoin RPC API"
   (:use [clojure.pprint]
         [clojure.repl])
   
@@ -280,7 +281,6 @@
    })
 
 (defn missing-arg-types [] (set/difference (argname-set) (into #{} (keys arg->type))))
-(defn missing-return-types [] (set/difference (retname-set) (into #{} (keys fn->type))))
 
 (defn assert-missing-types [the-set]
  (when (not (empty? the-set))
@@ -307,6 +307,7 @@
 (defn print-rpcs [] (doseq [s (get-rpcs)] (println s)))
 
 (defn retname-set [] (into #{} (get-rpcs)))
+(defn missing-return-types [] (set/difference (retname-set) (into #{} (keys fn->type))))
 ;(assert-missing-types (missing-return-types))
 
 

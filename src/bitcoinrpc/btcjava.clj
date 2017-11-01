@@ -1,4 +1,5 @@
 (ns bitcoinrpc.btcjava
+  "Bitcoin RPC Java API"
   (:use [clojure.pprint])
   (:require [bitcoinrpc.core :refer :all]))
 
