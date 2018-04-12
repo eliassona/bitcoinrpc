@@ -172,6 +172,24 @@
    'txid_txid-vout_n-map-list :list
    'n :long
    'true-false :boolean
+   'iswitness :boolean
+   'exclude :boolean
+   'include_removed :boolean 
+   'replaceable :boolean
+   'oldpassphrase :string
+   'newpassphrase :string
+   'verbosity :long
+   'conf_target :long
+   'timeout :long
+   'start_height :long
+   'stop_height :long
+   'estimate_mode :string
+   'include :list
+   'hexstring-list :list ;what is this?
+   'address_type :string
+   'mode :string
+   'dummy :object
+   'dummy-value :object
    })
 
 
@@ -377,7 +395,7 @@
 
 
 ;;the parser can't handle these RPC function yet.
-(def not-working #{"createrawtransaction" "listunspent" "sendmany"})
+(def not-working #{"createrawtransaction" "listunspent" "sendmany" "disconnectnode"})
 ;define them hardcoded
 (def-rpc-opt createrawtransaction 2 txids addresses locktime)
 (def-rpc-opt listunspent 0 minconf maxconf  addresses include_unsafe)
