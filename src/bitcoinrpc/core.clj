@@ -45,8 +45,8 @@
 
 (def config 
   (atom {:user (sys-prop-of "bitcoinrpc.user" ""), 
-         :password (sys-prop-of "bitcoinrpc.password" "tjabba"), 
-         :url (sys-prop-of "bitcoinrpc.url" "http://localhost:18332")}))
+         :password (sys-prop-of "bitcoinrpc.password"), 
+         :url (sys-prop-of "bitcoinrpc.url" "http://localhost:8332")}))
 
 (def hex-string? (partial re-matches #"[0-9a-fA-F]+"))
 
@@ -69,14 +69,13 @@
       (recur (rest r))
       (first r))))
 
-(defn added-config [args] (conj args 'config))
 
 (defmacro def-rpc [name & args]
-  `(defn ~name ~(get-description name) [~@(added-config args)] (btc-rpc-fn ~(str name) ~'config ~@args))) 
+  `(defn ~name ~(get-description name) [~@args] (btc-rpc-fn ~(str name) (deref ~'config) ~@args))) 
 
 (defmacro def-rpc-opt [name n & args]
   `(defn ~name ~(get-description name) 
-     ~@(map (comp #(concat % `((btc-rpc-fn ~(str name) ~@(first %)))) list vec #(added-config (take % args))) (range n (+ 1 (count args))))
+     ~@(map (comp #(concat % `((btc-rpc-fn ~(str name) (deref ~'config) ~@(first %)))) list vec #(take % args)) (range n (+ 1 (count args))))
      ))
 
 (defn btc-meta []
