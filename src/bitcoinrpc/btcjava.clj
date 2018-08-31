@@ -49,4 +49,4 @@
        [[] {:user user#, :password password#, :url url#}])
      ))
 
-(def-java-api)
+;(def-java-api)

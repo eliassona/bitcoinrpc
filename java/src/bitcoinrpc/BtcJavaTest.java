@@ -1,5 +1,5 @@
-//package bitcoinrpc;
-//
+package bitcoinrpc;
+
 //import bitcoinrpc.BtcJava;
 //
 //public class BtcJavaTest {

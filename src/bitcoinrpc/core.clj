@@ -45,7 +45,7 @@
 
 (def config 
   (atom {:user (sys-prop-of "bitcoinrpc.user" ""), 
-         :password (sys-prop-of "bitcoinrpc.password"), 
+         :password (sys-prop-of "bitcoinrpc.password" "masoigjo2i4jo28uijksnto82uw5ojsbkjw395iow,gdlfklsitupqjglsk"), 
          :url (sys-prop-of "bitcoinrpc.url" "http://localhost:8332")}))
 
 (def hex-string? (partial re-matches #"[0-9a-fA-F]+"))
@@ -221,7 +221,7 @@
    'getaddednodeinfo :list
    'getaddressesbyaccount :list
    'getbalance :double
-   'getbestblockhash :string
+   'getbestblockhash ::hex-string
    'getblock :object
    'getblockchaininfo :map
    'getblockcount :long

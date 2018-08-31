@@ -7,14 +7,14 @@
 
 (def coinbase-tx (apply str (repeat 32 "0")))
 
-(defn tx-history-of [txid]
-  (let [tx (-> txid getrawtransaction decoderawtransaction)
-        tx-id (tx "txid")]
-    (if (= tx-id coinbase-tx)
-      tx
-      (let [vin (tx "vin")]
-        tx))))
-        ;(lazy-seq (cons tx (tx-history-of  
+(defn tx-backward [tx-id]
+  "Get a lazy seq of transactions starting from txid and going backward in history"
+  (dbg tx-id)
+  (let [tx (-> tx-id getrawtransaction decoderawtransaction)
+        vin (tx "vin")]
+    (if (contains? (first vin) "coinbase")
+      (list tx)
+      (lazy-seq (cons tx (map (comp tx-backward #(% "txid")) vin))))))  
   
 (defn blocks-of [the-key]
   (letfn [(block-fn [block-hash]
@@ -41,4 +41,6 @@
     (blocks-backward (getblockhash 0))))
   
         
-  
+(defprotocol IStorage
+  (save [this key value])
+  (get [this key]))
