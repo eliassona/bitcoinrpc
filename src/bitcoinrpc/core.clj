@@ -14,7 +14,8 @@
             [clojure.main :as m]
             [clojure.set :as set]
             ;[com.gfredericks.debug-repl :refer [break! unbreak!]]
-            ))
+            )
+  (:import [java.net Socket InetAddress]))
 
 
 (defmacro dbg [body]
@@ -24,30 +25,29 @@
 
 (def ^:private id (atom 0))
 
+(defn connect []
+  (let [socket (Socket. "10.0.1.18" 8579)
+        out (.getOutputStream socket)
+        in  (.getInputStream socket)]
+    {:in in, :out out, :socket socket}))
 
-(defn btc-rpc-fn [method config & args]
-  (let [{:keys [user password url]} config
-        res 
-        (-> (client/post url 
-                         {:body (json/write-str 
-                                  {:method method
-                                   :params args
-                                   :id (str "id" (swap! id inc))})
-                          :headers {"Content-Type" "application/json; charset=utf-8"}
-                          :basic-auth [user password]
-                          :throw-entire-message? true}) :body json/read-str)]
-    (if-let
-      [e (res "error")]
-      (throw (IllegalStateException. e))
-      (res "result"))))
+
+(def server (connect))
+
+(defn btc-rpc-fn [method & args]
+  (let [json-str (str (json/json-str {:cmd "rpc" :payload {:method method, :params args}}) "\n")
+        in (:in server)
+        out (:out server)]
+    (.write out (.getBytes (dbg json-str)))
+    (.flush out)
+    (let [ba (byte-array (.available in))]
+      (.read in ba)
+      (String. ba))))
 
 (defn sys-prop-of [name default-value]
   (System/getProperty name default-value))
 
-(def config 
-  (atom {:user (sys-prop-of "bitcoinrpc.user" ""), 
-         :password (sys-prop-of "bitcoinrpc.password" "masoigjo2i4jo28uijksnto82uw5ojsbkjw395iow,gdlfklsitupqjglsk"), 
-         :url (sys-prop-of "bitcoinrpc.url" "http://localhost:8332")}))
+
 
 (def hex-string? (partial re-matches #"[0-9a-fA-F]+"))
 
@@ -60,9 +60,9 @@
 
 (defn split-help 
   ([]
-    (split (btc-rpc-fn "help" @config)))
+    (split (btc-rpc-fn "help")))
   ([cmd]
-    (split (btc-rpc-fn "help" @config cmd))))
+    (split (btc-rpc-fn "help" cmd))))
 
 (defn get-description [name]
   (loop [r (rest (split-help name))]
@@ -72,11 +72,11 @@
 
 
 (defmacro def-rpc [name & args]
-  `(defn ~name ~(get-description name) [~@args] (btc-rpc-fn ~(str name) (deref ~'config) ~@args))) 
+  `(defn ~name ~(get-description name) [~@args] (btc-rpc-fn ~(str name) ~@args))) 
 
 (defmacro def-rpc-opt [name n & args]
   `(defn ~name ~(get-description name) 
-     ~@(map (comp #(concat % `((btc-rpc-fn ~(str name) (deref ~'config) ~@(first %)))) list vec #(take % args)) (range n (+ 1 (count args))))
+     ~@(map (comp #(concat % `((btc-rpc-fn ~(str name) ~@(first %)))) list vec #(take % args)) (range n (+ 1 (count args))))
      ))
 
 (defn btc-meta []
@@ -397,9 +397,9 @@
 ;;the parser can't handle these RPC function yet.
 (def not-working #{"createrawtransaction" "listunspent" "sendmany" "disconnectnode"})
 ;define them hardcoded
-(def-rpc-opt createrawtransaction 2 txids addresses locktime)
-(def-rpc-opt listunspent 0 minconf maxconf  addresses include_unsafe)
-(def-rpc-opt sendmany 2 fromaccount addess-map minconf comment addresses)
+;(def-rpc-opt createrawtransaction 2 txids addresses locktime)
+;(def-rpc-opt listunspent 0 minconf maxconf  addresses include_unsafe)
+;(def-rpc-opt sendmany 2 fromaccount addess-map minconf comment addresses)
 
 (defn valid-fn [l] 
   (let [n (first (.split l " "))]
@@ -418,7 +418,7 @@
       'do)))
 
 
-(def-rpcs)
+#_(def-rpcs)
 
 
 
